@@ -1014,13 +1014,15 @@ function autoGeneratePath() {
 // EXPORT
 // ─────────────────────────────────────────────────────────────────────────
 function normPath(d, H) {
-  // All numbers in the path alternate as x,y pairs — scale x÷REF_W, y÷H
+  // Tokenize path into commands and numbers, scale x by REF_W and y by H
+  // Reset the x/y counter at each command letter so multi-stroke paths work correctly
   let idx = 0;
-  return d.replace(/[-\d.]+(?:\.\d+)?/g, n => {
-    const v = parseFloat(n);
+  return d.replace(/([MmCcLlZz])|([- ]?[-\d.]+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g, (match, cmd, num) => {
+    if (cmd) { idx = 0; return cmd; }
+    const v = parseFloat(num);
     const scaled = idx % 2 === 0 ? +(v / REF_W).toFixed(4) : +(v / H).toFixed(4);
     idx++;
-    return scaled;
+    return (num[0] === ' ' ? ' ' : '') + scaled;
   });
 }
 

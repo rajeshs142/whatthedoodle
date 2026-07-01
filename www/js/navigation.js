@@ -190,11 +190,12 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
   // Denormalize a path string into section-local pixel coords (x×W, y×H)
   function denorm(d, W, H) {
     let idx = 0;
-    return d.replace(/[-\d.]+(?:\.\d+)?/g, n => {
-      const v = parseFloat(n);
+    return d.replace(/([MmCcLlZz])|([- ]?[-\d.]+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g, (match, cmd, num) => {
+      if (cmd) { idx = 0; return cmd; }
+      const v = parseFloat(num);
       const r = idx % 2 === 0 ? (v * W).toFixed(1) : (v * H).toFixed(1);
       idx++;
-      return r;
+      return (num[0] === ' ' ? ' ' : '') + r;
     });
   }
 
