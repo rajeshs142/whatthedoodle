@@ -868,8 +868,8 @@ window.addEventListener('mouseup', () => {
   const s = sec(curCat);
   pathHistory.push(s.pathD);
   if (pathHistory.length > 30) pathHistory.shift();
-  // Append segment to existing path
-  s.pathD = s.pathD ? s.pathD + ' ' + seg.replace(/^M[\d. ]+/, d => 'L ' + d.slice(1).trim()) : seg;
+  // Append segment to existing path (each stroke stays independent)
+  s.pathD = s.pathD ? s.pathD + ' ' + seg : seg;
   s.pathPts = [];
   save(); setRoad(s.pathD);
 });
@@ -908,12 +908,8 @@ mapSvg.addEventListener('touchend', e => {
   const seg = catmullToD(rdp(rawPts, 4));
   const s = sec(curCat);
   pathHistory.push(s.pathD);
-  // Append segment to existing path instead of replacing it
-  s.pathD = s.pathD ? s.pathD + ' ' + seg.replace(/^M[\d. ]+/, d => {
-    // Replace leading M with L to connect stroke to previous path end
-    const coords = d.slice(1).trim();
-    return 'L ' + coords;
-  }) : seg;
+  // Append segment to existing path (each stroke stays independent)
+  s.pathD = s.pathD ? s.pathD + ' ' + seg : seg;
   s.pathPts = [];  // freehand mode — pathPts not used for append
   save(); setRoad(s.pathD);
 }, {passive:true});
