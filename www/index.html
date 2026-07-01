@@ -1,0 +1,426 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<title>What the Doodle?</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+
+<div class="game">
+
+  <!-- PAGE: HOME -->
+  <div id="page-home" class="page">
+    <div id="homeBg"></div>
+    <div class="home-content">
+      <div class="home-logo">WHAT THE<br/><span>DOODLE?</span></div>
+      <div class="home-tagline">CAN YOU NAME THE DOODLE?</div>
+
+      <div id="homeBtns" class="home-btns">
+
+        <button class="home-btn primary" onclick="onPlayClick()">PLAY</button>
+      <button class="home-btn secondary" id="homeDailyBtn" onclick="startDailyMode()">DAILY</button>
+      <button class="home-btn secondary" onclick="showDoodlesPage()">CREATE MY DOODLE</button>
+      <button class="home-btn secondary" onclick="showSettingsPage()">SETTINGS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: LEVEL MAP -->
+
+  <div id="page-levels" class="page">
+    <div class="page-header">
+      <span class="page-header-title">MAP</span>
+    </div>
+    <div class="levels-scroll">
+      <div class="level-path" id="levelPath"></div>
+    </div>
+    <div class="page-footer">
+      <button class="overlay-btn home" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+
+  <!-- PAGE: GAME -->
+  <div id="page-game" class="page">
+    <div id="doodlePlayHeader" class="doodle-play-header" style="display:none"></div>
+    <div class="score-bar">
+      <div>
+        <div>Score</div>
+        <div class="score-val" id="scoreVal">0</div>
+      </div>
+      <div style="text-align:center">
+        <div id="timerDisplay" class="game-timer">00:00</div>
+        <div class="game-subline"><span id="dayLabel" style="display:none"></span><span id="drawingNum">1/3</span></div>
+      </div>
+      <div style="text-align:right">
+        <div>Best</div>
+        <div class="score-val" id="bestVal">0</div>
+      </div>
+    </div>
+    <div class="game-timer-track"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="canvas-wrap"><canvas id="drawCanvas"></canvas></div>
+    <div id="status"></div>
+    <div class="input-row">
+      <div class="input-wrap">
+        <input id="guessInput" type="text" placeholder="GUESS" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="30" inputmode="none" readonly/>
+        <div id="micBtn" class="mic-btn" style="display:none" onclick="toggleMicManual()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
+      </div>
+      <button id="submitBtn" onclick="submitGuess()">GO</button>
+    </div>
+    <div class="keyboard" id="keyboard"></div>
+  </div>
+
+  <!-- PAGE: ROUND RESULT -->
+  <div id="page-result" class="page">
+    <div class="page-header">
+      <span class="page-header-title" id="resultTitle">NICE!</span>
+    </div>
+    <div class="page-content">
+      <div id="resultSvgWrap"></div>
+      <div id="resultStars" class="result-stars"></div>
+      <div class="reveal-answer" id="resultAnswer"></div>
+      <div class="overlay-stats">
+        <div class="stat">
+          <div class="stat-val" id="statScore">0</div>
+          <div class="stat-label">Points</div>
+        </div>
+      </div>
+    </div>
+    <div class="page-footer">
+      <button class="overlay-btn primary" id="nextBtn" onclick="nextDrawing()">NEXT DRAWING</button>
+      <div id="resultLevelBtns" class="result-level-btns" style="display:none">
+        <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
+        <button class="overlay-btn primary" id="nextLevelBtn" onclick="goNextLevel()">NEXT</button>
+        <button class="overlay-btn primary" id="retryLevelBtn" onclick="playMapNode(currentMapNodeIdx)" style="display:none">PLAY AGAIN</button>
+      </div>
+      <button class="overlay-btn home" id="resultHomeBtn" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+  <!-- PAGE: DOODLE SLOTS -->
+  <div id="page-doodles" class="page">
+    <div class="page-header">
+      <span class="page-header-title">MY DOODLES</span>
+    </div>
+    <div class="page-content" style="justify-content:flex-start;gap:12px">
+      <div class="doodle-settings-bar">
+        <input type="text" id="doodle-name" placeholder="Name (optional)" maxlength="20"/>
+        <div class="doodle-settings-times">
+          <label class="cfg-label">DRAW</label>
+          <input type="number" id="doodle-dt" min="5" max="60" step="1" value="15"/>
+          <label class="cfg-label">GUESS</label>
+          <input type="number" id="doodle-gt" min="5" max="60" step="1" value="10"/>
+        </div>
+      </div>
+      <div id="doodleSlotsContainer" style="width:100%"></div>
+      <div id="shareDoodlesMsg" class="doodle-create-error" style="min-height:0"></div>
+    </div>
+    <div class="page-footer">
+      <button class="overlay-btn primary" id="newDoodleBtn" onclick="startNewDoodle()">NEW DOODLE</button>
+      <div class="summary-btn-row">
+        <button class="overlay-btn secondary" id="shareDoodlesBtn" onclick="shareSelectedDoodles()">SHARE</button>
+        <button class="overlay-btn home" onclick="showHome()">HOME</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: CREATE DOODLE -->
+  <div id="page-create" class="page">
+    <div class="page-header">
+      <button class="icon-btn" onclick="backFromCreate()">
+        
+      </button>
+      <span class="page-header-title">DRAW SOMETHING</span>
+      <div style="width:36px"></div>
+    </div>
+    <div class="doodle-canvas-wrap">
+      <canvas id="doodleCanvas"></canvas>
+    </div>
+    <div class="doodle-tools">
+      <button class="sw-btn active" data-sw="2" onclick="setDoodleSW(2)">
+        <span class="sw-preview" style="width:3px;height:3px"></span>THIN
+      </button>
+      <button class="sw-btn" data-sw="4" onclick="setDoodleSW(4)">
+        <span class="sw-preview" style="width:5px;height:5px"></span>MED
+      </button>
+      <button class="sw-btn" data-sw="7" onclick="setDoodleSW(7)">
+        <span class="sw-preview" style="width:8px;height:8px"></span>THICK
+      </button>
+      <div class="doodle-tool-gap"></div>
+      <button class="sw-btn" onclick="doodleUndo()">UNDO</button>
+      <button class="sw-btn" onclick="doodleClear()">CLEAR</button>
+    </div>
+    <div class="doodle-stroke-info" id="doodleStrokeInfo">8 STROKES REMAINING</div>
+    <div class="page-footer">
+      <input type="text" id="doodle-word" placeholder="What did you draw?" maxlength="30"
+        oninput="clearDoodleError()"
+        style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;
+               background:var(--surface);color:var(--text);font-family:inherit;font-size:1rem;
+               font-weight:700;letter-spacing:1px;outline:none;box-sizing:border-box"/>
+      <div id="doodleCreateError" class="doodle-create-error"></div>
+      <div class="summary-btn-row">
+        <button class="overlay-btn home" onclick="backFromCreate()">CANCEL</button>
+        <button class="overlay-btn primary" id="doodleCreateBtn" onclick="createDoodle()" style="flex:2">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: DOODLE RESULT -->
+  <div id="page-doodle-result" class="page">
+    <div class="page-header">
+      <span class="page-header-title" id="doodleResultTitle">YOU GOT IT!</span>
+    </div>
+    <div class="page-content">
+      <div class="doodle-result-word" id="doodleResultWord"></div>
+      <div class="overlay-stats">
+        <div class="stat" id="doodleResultStat">
+          <div class="stat-val" id="doodleResultScore">0</div>
+          <div class="stat-label">Seconds Left</div>
+        </div>
+      </div>
+    </div>
+    <div class="page-footer">
+      <button class="overlay-btn primary" id="doodleNextBtn" onclick="doodleNext()" style="display:none">NEXT</button>
+      <button class="overlay-btn primary" id="doodleShareResultBtn" onclick="shareDoodleResult()">SHARE RESULT</button>
+      <button class="overlay-btn secondary" onclick="playRealGame()">PLAY GAME</button>
+      <button class="overlay-btn home" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+  <!-- PAGE: SETTINGS -->
+  <div id="page-settings" class="page">
+    <div class="page-header">
+      <span class="page-header-title" style="text-align:center;width:100%">SETTINGS</span>
+    </div>
+    <div class="page-content" style="gap:14px">
+    <div class="preview-wrap">
+      <div id="settingsPreviewFrame" class="preview-frame">
+        
+      </div>
+    </div>
+    <div class="cfg-grid" style="width:100%;max-width:400px">
+      <div class="cfg-row">
+        <label class="cfg-label">Stroke Mode</label>
+        <select id="cfg-strokeMode" onchange="onSettingChange()">
+          <option value="forward">Forward</option>
+          <option value="reverse">Reverse</option>
+          <option value="random">Random</option>
+          <option value="all">All at Once</option>
+        </select>
+      </div>
+      <div class="cfg-row">
+        <label class="cfg-label">Theme</label>
+        <select id="cfg-theme" onchange="onSettingChange()">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="sepia">Sepia</option>
+          <option value="ocean">Ocean</option>
+          <option value="forest">Forest</option>
+        </select>
+      </div>
+      <div class="cfg-row" style="display:none">
+        <label class="cfg-label">Draw Time (s)</label>
+        <input type="number" id="cfg-drawTime" min="1" max="60" step="1"/>
+      </div>
+      <div class="cfg-row" style="display:none">
+        <label class="cfg-label">Guess Time (s)</label>
+        <input type="number" id="cfg-guessTime" min="1" max="60" step="1"/>
+      </div>
+      <div class="cfg-row" style="display:none">
+        <label class="cfg-label">Stroke Width</label>
+        <input type="number" id="cfg-strokeWidth" min="1" max="10" step="1"/>
+      </div>
+      <div class="cfg-row">
+        <label class="cfg-label">Frame Style</label>
+        <select id="cfg-frameStyle" onchange="onSettingChange()">
+          <option value="none">None</option>
+          <option value="simple">Simple</option>
+          <option value="classic">Classic</option>
+        </select>
+      </div>
+      <div class="cfg-row" style="display:none">
+        <label class="cfg-label">Canvas Effect</label>
+        <select id="cfg-canvasEffect">
+          <option value="none">None</option>
+          <option value="rotate">Rotate</option>
+          <option value="zoom-in">Zoom In</option>
+          <option value="zoom-out">Zoom Out</option>
+        </select>
+      </div>
+      <div class="cfg-row cfg-check" style="display:none">
+        <input type="checkbox" id="cfg-showMillis"/>
+        <label class="cfg-label">Show Millis</label>
+      </div>
+      <div class="cfg-row cfg-check" style="display:none">
+        <input type="checkbox" id="cfg-showThread"/>
+        <label class="cfg-label">Show Thread</label>
+      </div>
+      <div class="cfg-row cfg-check" style="display:none">
+        <input type="checkbox" id="cfg-showNail"/>
+        <label class="cfg-label">Show Nail</label>
+      </div>
+      <div class="cfg-row cfg-check" style="display:none">
+        <input type="checkbox" id="cfg-showSwing"/>
+        <label class="cfg-label">Show Swing</label>
+      </div>
+      <div class="cfg-row cfg-check">
+        <input type="checkbox" id="cfg-showSuggestions" onchange="onSettingChange()"/>
+        <label class="cfg-label">Suggestions</label>
+      </div>
+      <div class="cfg-row cfg-check" id="cfg-sounds-row">
+        <input type="checkbox" id="cfg-sounds" onchange="applySoundsToggle()"/>
+        <label class="cfg-label">Sounds</label>
+      </div>
+</div>
+    <div id="settingsExitPrompt" class="settings-exit-prompt">
+      <div class="prompt-label">Apply changes before leaving?</div>
+      <div class="prompt-btns">
+        <button class="overlay-btn primary" style="flex:1" onclick="applyCfg()">APPLY</button>
+        <button class="overlay-btn secondary" style="flex:1" onclick="settingsDiscard()">DISCARD</button>
+        <button class="overlay-btn home" style="flex:1" onclick="document.getElementById('settingsExitPrompt').style.display='none'">STAY</button>
+      </div>
+    </div>
+    </div><!-- end page-content -->
+    <div class="page-footer">
+      <button class="overlay-btn primary" style="width:100%;max-width:340px;align-self:center" onclick="applyCfg()">APPLY</button>
+      <button class="overlay-btn secondary" style="width:100%;max-width:340px;align-self:center" onclick="showStatsPage('settings')">STATS</button>
+      <button class="overlay-btn home" onclick="settingsLeave()">HOME</button>
+    </div>
+  </div>
+
+  <!-- PAGE: SUMMARY -->
+  <div id="page-summary" class="page">
+    <div class="page-header">
+      <span class="page-header-title" id="summaryTitle">DAY 1</span>
+    </div>
+    <div class="page-content" style="align-items:center;gap:clamp(8px,1.5vh,14px)">
+      <span id="summaryCategory" class="summary-result-label"></span>
+      <div class="overlay-stats">
+        <div class="stat">
+          <div class="stat-val" id="summaryTotalPts">0</div>
+          <div class="stat-label" id="summaryPtsLabel">Points</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val result-stars" id="summaryWon">0/1</div>
+          <div class="stat-label" id="summaryWonLabel">Correct</div>
+        </div>
+      </div>
+      <div id="summaryFrames" class="summary-frames"></div>
+    </div>
+    <div class="page-footer">
+      <div id="summaryDayBtnsWon" style="display:none;width:100%;flex-direction:column;gap:8px">
+        <button class="overlay-btn primary" onclick="shareDay()">SHARE RESULT</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" onclick="replayDay()">PLAY AGAIN</button>
+          <button class="overlay-btn secondary" onclick="showArchivePage('summary')">ARCHIVE</button>
+        </div>
+      </div>
+      <div id="summaryDayBtnsFail" style="display:none;width:100%;flex-direction:column;gap:8px">
+        <button class="overlay-btn primary" onclick="replayDay()">PLAY AGAIN</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" onclick="shareDay()">SHARE</button>
+          <button class="overlay-btn secondary" onclick="showArchivePage('summary')">ARCHIVE</button>
+        </div>
+      </div>
+      <div id="summaryDoodleBtns" class="summary-btn-row" style="display:none">
+        <button class="overlay-btn home" onclick="showHome()">HOME</button>
+        <button class="overlay-btn primary" onclick="shareDailyResult()">SHARE</button>
+      </div>
+      <div id="summaryLevelBtnsPreview" style="display:none;width:100%;flex-direction:column;gap:8px">
+        <button class="overlay-btn primary" onclick="shareLevel()">SHARE RESULT</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" onclick="playMapNode(currentMapNodeIdx)">PLAY AGAIN</button>
+          <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
+        </div>
+      </div>
+      <div id="summaryLevelBtnsWon" style="display:none;width:100%;flex-direction:column;gap:8px">
+        <button class="overlay-btn primary" onclick="shareLevel()">SHARE RESULT</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" onclick="goNextLevel()">NEXT</button>
+          <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
+        </div>
+      </div>
+      <div id="summaryLevelBtnsFail" style="display:none;width:100%;flex-direction:column;gap:8px">
+        <button class="overlay-btn primary" onclick="playMapNode(currentMapNodeIdx)">PLAY AGAIN</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" onclick="shareLevel()">SHARE</button>
+          <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
+        </div>
+      </div>
+      <button class="overlay-btn home" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+  <!-- PAGE: STATS -->
+  <div id="page-stats" class="page">
+    <div class="page-header">
+      <span class="page-header-title">STATS</span>
+    </div>
+    <div class="page-content" style="align-items:center;gap:14px">
+      <div id="statsBody" style="width:100%;max-width:400px"></div>
+      <p style="font-size:0.6rem;color:var(--sub);text-align:center;line-height:1.5;max-width:300px">Drawing data from <a href="https://quickdraw.withgoogle.com/data" target="_blank" style="color:inherit;text-decoration:underline">Quick, Draw!</a> by Google, used under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" style="color:inherit;text-decoration:underline">CC BY 4.0</a>.</p>
+    </div>
+    <div class="page-footer">
+      <button class="overlay-btn home" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+  <!-- PAGE: ARCHIVE -->
+  <div id="page-archive" class="page">
+    <div class="page-header">
+      <span class="page-header-title">ARCHIVE</span>
+    </div>
+    <div class="cal-filters" style="flex-shrink:0">
+      <button class="cal-filter active" data-filter="all"        onclick="setCalFilter('all')">ALL</button>
+      <button class="cal-filter"        data-filter="completed"  onclick="setCalFilter('completed')">PLAYED</button>
+      <button class="cal-filter"        data-filter="incomplete" onclick="setCalFilter('incomplete')">NOT PLAYED</button>
+    </div>
+    <div id="calendarBody" style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;gap:8px;padding:0 16px"></div>
+    <div class="page-footer">
+      <button class="overlay-btn home" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+</div>
+
+
+    </div>
+
+<!-- SHARE SHEET -->
+<div id="shareSheet">
+  <div class="share-sheet-title" id="shareSheetTitle">SHARE</div>
+  <div id="shareUrlList" class="share-url-list"></div>
+  <button class="overlay-btn" id="shareNativeBtn" onclick="nativeShare()" style="display:none">SHARE VIA...</button>
+  <button class="overlay-btn" onclick="closeShareSheet()">CLOSE</button>
+</div>
+
+
+<script src="drawings.js"></script>
+<script src="bg.js"></script>
+<script src="js/lz-string.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/map_sections.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/canvas.js"></script>
+<script src="js/game.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/sounds.js"></script>
+<script src="js/mic.js"></script>
+<script src="js/background.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/archive.js"></script>
+<script src="js/doodle.js"></script>
+<script src="js/share.js"></script>
+<script src="js/init.js"></script>
+</body>
+</html>
+

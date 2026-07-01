@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Map Editor — What the Doodle?</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  display: flex; height: 100vh; overflow: hidden;
+  background: #111; color: #ccc;
+  font-family: system-ui, sans-serif; font-size: 13px;
+}
+
+/* ── SIDEBAR ──────────────────────────────────────────────────────────── */
+#sidebar {
+  width: 170px; flex-shrink: 0;
+  background: #171717; border-right: 1px solid #2a2a2a;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#sidebar-hdr {
+  padding: 10px 12px; font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; color: #444; text-transform: uppercase;
+  border-bottom: 1px solid #2a2a2a; flex-shrink: 0;
+}
+#cat-list { flex: 1; overflow-y: auto; }
+.cat-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px; cursor: pointer;
+  border-left: 3px solid transparent; transition: background 0.1s;
+  user-select: none;
+}
+.cat-item:hover { background: #1e1e1e; }
+.cat-item.active { background: #222; border-left-color: #aaa; }
+.cat-swatch { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cat-name { flex: 1; font-size: 11px; font-weight: 600; text-transform: capitalize; color: #bbb; }
+.cat-done { font-size: 10px; color: #4c4; }
+.cat-partial { font-size: 10px; color: #a84; }
+
+/* ── CANVAS AREA ──────────────────────────────────────────────────────── */
+#canvas-area {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+}
+#canvas-bar {
+  display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+  background: #171717; border-bottom: 1px solid #2a2a2a; flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.bar-label { font-size: 10px; color: #444; letter-spacing: 1.5px; text-transform: uppercase; }
+.bar-sep { width: 1px; height: 18px; background: #2a2a2a; margin: 0 2px; }
+#bar-cat { font-size: 12px; font-weight: 700; color: #ddd; min-width: 70px; }
+#bar-hint { font-size: 10px; color: #3a3; margin-left: 4px; font-style: italic; }
+.bar-input {
+  padding: 3px 7px; background: #1e1e1e; border: 1px solid #2e2e2e;
+  color: #ccc; border-radius: 4px; font-size: 12px; width: 60px;
+}
+#bar-color { width: 28px; height: 24px; padding: 1px; border: 1px solid #2e2e2e; border-radius: 4px; background: #1e1e1e; cursor: pointer; }
+#canvas-scroll { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 24px; background: #111; }
+#canvas-wrap { position: relative; flex-shrink: 0; box-shadow: 0 0 0 1px #2a2a2a, 0 8px 40px rgba(0,0,0,0.6); }
+#map-svg { display: block; }
+
+/* ── TOOLS PANEL ──────────────────────────────────────────────────────── */
+#tools {
+  width: 210px; flex-shrink: 0;
+  background: #171717; border-left: 1px solid #2a2a2a;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.pane { border-bottom: 1px solid #222; padding: 10px 12px; flex-shrink: 0; }
+.pane-title { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #444; margin-bottom: 8px; }
+.tool-btn {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 7px 9px; border-radius: 5px; border: 1px solid #2a2a2a;
+  background: #1e1e1e; color: #888; cursor: pointer; font-size: 11px;
+  font-weight: 600; margin-bottom: 4px; transition: all 0.1s; text-align: left;
+}
+.tool-btn:hover { background: #242424; color: #bbb; }
+.tool-btn.active { background: #1a2a1a; border-color: #3a7a3a; color: #4c4; }
+.tool-icon { font-size: 13px; width: 16px; text-align: center; }
+
+.prop-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.prop-label { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 1px; width: 32px; flex-shrink: 0; }
+.prop-row input[type=range] { flex: 1; accent-color: #4c4; }
+.prop-val { font-size: 10px; color: #666; width: 30px; text-align: right; }
+
+#doodle-picker { flex: 1; overflow-y: auto; padding: 8px; }
+#doodle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.dthumb {
+  background: #1e1e1e; border: 1.5px solid #2a2a2a; border-radius: 5px;
+  padding: 4px; cursor: pointer; text-align: center; transition: border-color 0.1s;
+}
+.dthumb:hover { border-color: #444; }
+.dthumb.sel { border-color: #4c4; background: #1a2a1a; }
+.dthumb svg { display: block; margin: 0 auto; }
+.dthumb-lbl { font-size: 9px; color: #555; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.act-btn {
+  width: 100%; padding: 7px; border-radius: 5px; border: 1px solid #2e2e2e;
+  background: #1e1e1e; color: #aaa; cursor: pointer; font-size: 10px;
+  font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 5px; transition: all 0.1s;
+}
+.act-btn:hover { background: #242424; }
+.act-btn.ok  { background: #152515; border-color: #3a7a3a; color: #4c4; }
+.act-btn.ok:hover { background: #1a2e1a; }
+.act-btn.del { border-color: #5a2a2a; color: #c66; }
+.act-btn.del:hover { background: #2a1a1a; }
+
+#no-doodles { font-size: 10px; color: #444; text-align: center; padding: 12px 0; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-hdr">Categories</div>
+  <div id="cat-list"></div>
+</div>
+
+<!-- CANVAS -->
+<div id="canvas-area">
+  <div id="canvas-bar">
+    <span class="bar-label">Section</span>
+    <span id="bar-cat">—</span>
+    <div class="bar-sep"></div>
+    <span class="bar-label">H</span>
+    <input class="bar-input" type="number" id="inp-height" value="500" min="200" max="3000" step="50"/>
+    <span class="bar-label" style="margin-left:-4px">px</span>
+    <div class="bar-sep"></div>
+    <span class="bar-label">GRAD</span>
+    <input type="color" id="bar-grad-from" value="#1a1a1a" title="Bottom color (entry)"/>
+    <span style="font-size:9px;color:#444;margin:0 2px">↑</span>
+    <input type="color" id="bar-grad-to"   value="#1a1a1a" title="Top color (exit)"/>
+    <button onclick="resetGradToDefault()" title="Reset to soft category colours"
+            style="font-size:10px;padding:1px 5px;background:#1e1e1e;border:1px solid #2e2e2e;color:#666;border-radius:3px;cursor:pointer">↺</button>
+    <div class="bar-sep"></div>
+    <span class="bar-label">Style</span>
+    <select id="bar-style" onchange="changeStyle(this.value)" style="background:#1e1e1e;border:1px solid #2e2e2e;color:#ccc;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer">
+      <option value="road">Road</option>
+      <option value="plain">Plain</option>
+      <option value="dash">Dash</option>
+      <option value="pipe">Pipe</option>
+      <option value="rail">Rail</option>
+      <option value="dirt">Dirt</option>
+      <option value="water">Water</option>
+      <option value="lava">Lava</option>
+      <option value="snow">Snow</option>
+    </select>
+    <input type="color" id="bar-path-color" value="#ffffff" title="Path colour"
+           style="width:28px;height:24px;padding:1px;border:1px solid #2e2e2e;border-radius:4px;background:#1e1e1e;cursor:pointer"/>
+    <button onclick="resetPathColor()" title="Reset to style default"
+            style="font-size:10px;padding:1px 5px;background:#1e1e1e;border:1px solid #2e2e2e;color:#666;border-radius:3px;cursor:pointer">↺</button>
+    <div class="bar-sep"></div>
+    <span id="bar-hint">Draw the full map path (200 nodes)</span>
+  </div>
+  <div id="canvas-scroll">
+    <div id="canvas-wrap">
+      <svg id="map-svg" width="375" height="500" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sec-grad" x1="0" y1="1" x2="0" y2="0" gradientUnits="objectBoundingBox">
+            <stop id="grad-stop-from" offset="0%"   stop-color="#1a1a1a"/>
+            <stop id="grad-stop-to"   offset="100%" stop-color="#1a1a1a"/>
+          </linearGradient>
+        </defs>
+        <!-- Background -->
+        <rect id="svg-bg" width="375" height="500" fill="url(#sec-grad)"/>
+        <!-- Entry point guide -->
+        <circle id="entry-dot" r="6" fill="none" stroke="#ffffff44" stroke-width="2" stroke-dasharray="3 3" display="none"/>
+        <text id="entry-lbl" fill="#ffffff33" font-size="9" text-anchor="middle" display="none">start here</text>
+        <!-- Doodles (below path) -->
+        <g id="doodles-layer"></g>
+        <!-- Road (3 layers) -->
+        <path id="road-shadow" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="road-body"   fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="road-dash"   fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="3"  stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 14"/>
+        <!-- Live drawing -->
+        <path id="live-path" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round"/>
+        <!-- Nodes (above path) -->
+        <g id="nodes-layer"></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLS PANEL -->
+<div id="tools">
+  <div class="pane">
+    <div class="pane-title">Tool</div>
+    <button class="tool-btn active" data-tool="path"      onclick="setTool('path')">     <span class="tool-icon">✏️</span> Draw Path</button>
+    <button class="tool-btn"        data-tool="waypoints" onclick="setTool('waypoints')"><span class="tool-icon">⦿</span>  Waypoints</button>
+    <button class="tool-btn"        data-tool="nodes"     onclick="setTool('nodes')">    <span class="tool-icon">⬤</span>  Nodes</button>
+    <button class="tool-btn"        data-tool="doodles"   onclick="setTool('doodles')">  <span class="tool-icon">🖼</span> Doodles</button>
+  </div>
+
+  <!-- Doodle selected properties -->
+  <div class="pane" id="pane-sel" style="display:none">
+    <div class="pane-title">Selected Doodle</div>
+    <div class="prop-row">
+      <span class="prop-label">ROT</span>
+      <input type="range" id="sel-rot" min="-180" max="180" value="0" oninput="selProp('rot',+this.value)"/>
+      <span class="prop-val" id="lbl-rot">0°</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-label">SIZE</span>
+      <input type="range" id="sel-size" min="30" max="160" value="70" oninput="selProp('size',+this.value)"/>
+      <span class="prop-val" id="lbl-size">70</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-label">STRK</span>
+      <input type="range" id="sel-strokew" min="1" max="15" value="5" oninput="selProp('strokeW',+this.value)"/>
+      <span class="prop-val" id="lbl-strokew">5</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-label">OPQ</span>
+      <input type="range" id="sel-opq" min="0" max="100" value="100" oninput="selProp('opq',+this.value)"/>
+      <span class="prop-val" id="lbl-opq">100%</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-label">CLR</span>
+      <input type="color" id="sel-color" value="#ffffff" oninput="selProp('color',this.value)"
+             style="width:38px;height:22px;padding:1px;border:1px solid #2e2e2e;border-radius:4px;background:#1e1e1e;cursor:pointer;flex-shrink:0"/>
+      <button onclick="resetDoodleColor()" style="font-size:9px;padding:2px 5px;background:#1e1e1e;border:1px solid #2e2e2e;color:#888;border-radius:3px;cursor:pointer;white-space:nowrap">Theme</button>
+    </div>
+    <button class="act-btn del" onclick="delSelDoodle()">Remove</button>
+  </div>
+
+  <!-- Doodle picker (shown in doodles mode) -->
+  <div id="doodle-picker" style="display:none">
+    <div class="pane-title" style="padding:8px 8px 4px;border-bottom:1px solid #222;flex-shrink:0">Pick doodle to place</div>
+    <div id="doodle-grid"></div>
+    <div id="no-doodles" style="display:none">No drawings for this category</div>
+  </div>
+
+  <div style="flex:1"></div>
+
+  <div class="pane">
+    <div class="pane-title">Actions</div>
+    <button class="act-btn ok" onclick="autoGeneratePath()">⚡ Auto Path + Nodes</button>
+    <button class="act-btn" onclick="doUndo()">⟵ Undo Path</button>
+    <button class="act-btn" onclick="clearNodes()">Clear Nodes</button>
+    <button class="act-btn" onclick="clearSection()">Clear Section</button>
+    <button class="act-btn" onclick="showPreview()">👁 Preview Map</button>
+    <button class="act-btn ok" onclick="doExport()">⬇ Export All Sections</button>
+  </div>
+</div>
+
+<!-- PREVIEW OVERLAY -->
+<div id="preview-overlay" style="display:none;position:fixed;inset:0;background:#0d0d0d;z-index:999;overflow-y:auto;flex-direction:column;align-items:center;">
+  <div style="position:sticky;top:0;width:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);
+              padding:8px 16px;display:flex;align-items:center;justify-content:space-between;z-index:1;border-bottom:1px solid #222;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#555">Map Preview</span>
+    <button onclick="closePreview()"
+            style="padding:5px 14px;background:#1e1e1e;border:1px solid #333;color:#aaa;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600">
+      ✕ Close
+    </button>
+  </div>
+  <div id="preview-map" style="position:relative;width:375px;flex-shrink:0;margin-bottom:40px;"></div>
+</div>
+
+<script src="drawings.js"></script>
+<script src="js/config.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────
+const REF_W = 375;
+
+// ─────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────
+const FLAT_MAP_CAT = 'map';   // special single-section mode
+let curCat    = FLAT_MAP_CAT;
+let curTool   = 'path';
+let drawing   = false;
+let rawPts    = [];        // live freehand points
+let pathHistory = [];      // undo stack for current section's path
+let selDoodleId  = null;   // id of doodle chosen in picker
+let selDoodleIdx = null;   // index of placed doodle currently selected
+
+let sections = {};         // { [cat]: { bgColor, height, pathD, pathPts[], nodes[], doodles[] } }
+
+const _DOODLE_PALETTE = [
+  // a couple of neutrals
+  '#ffffff', '#dddddd',
+  // muted warm/cool pastels — majority
+  '#a8c8e8','#88b4d8','#6ea8d0',
+  '#b8e8c8','#90d4a8','#70c498',
+  '#e8c8a8','#d8a878','#c89060',
+  '#c8a8e8','#b088d4','#9870c4',
+  '#e8a8c8','#d880b0','#c46898',
+  '#e8d8a0','#d4c070','#c0a850',
+];
+function randomDoodleColor() {
+  const s = sec(curCat);
+  const exclude = [s.gradFrom, s.gradTo].filter(Boolean).map(c => c.toLowerCase());
+  let pick, tries = 0;
+  do {
+    pick = _DOODLE_PALETTE[Math.floor(Math.random() * _DOODLE_PALETTE.length)];
+    tries++;
+  } while (exclude.includes(pick.toLowerCase()) && tries < 10);
+  return pick;
+}
+
+function lightenHex(hex, t) {
+  // t=0: original colour, t=1: white
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+  const r = parseInt(hex.slice(0,2), 16);
+  const g = parseInt(hex.slice(2,4), 16);
+  const b = parseInt(hex.slice(4,6), 16);
+  const mix = v => Math.round(v + (255 - v) * t).toString(16).padStart(2, '0');
+  return `#${mix(r)}${mix(g)}${mix(b)}`;
+}
+
+function defSec(cat) {
+  if (cat === FLAT_MAP_CAT) {
+    return { gradFrom: '#1a1a1a', gradTo: '#1a1a1a', height: 10000, pathStyle: 'road', pathColor: null, pathD: '', pathPts: [], nodes: [], doodles: [] };
+  }
+  const th   = WORLD_THEMES[cat] || { bg:'#1a1a1a', color:'#888' };
+  const idx  = WORLD_ORDER.indexOf(cat);
+  const next = WORLD_THEMES[WORLD_ORDER[(idx + 1) % WORLD_ORDER.length]] || th;
+  return {
+    gradFrom: lightenHex(th.color, 0.55),
+    gradTo:   lightenHex(next.color, 0.55),
+    height: 500, pathStyle: 'road', pathColor: null, pathD: '', pathPts: [], nodes: [], doodles: [],
+  };
+}
+
+function resetGradToDefault() {
+  const s   = sec(curCat);
+  const th  = WORLD_THEMES[curCat] || { color:'#888' };
+  const idx = WORLD_ORDER.indexOf(curCat);
+  const nxt = WORLD_THEMES[WORLD_ORDER[(idx + 1) % WORLD_ORDER.length]] || th;
+  s.gradFrom = lightenHex(th.color, 0.55);
+  s.gradTo   = lightenHex(nxt.color, 0.55);
+  save(); renderSection();
+}
+function migrateSection(s) {
+  // Upgrade old bgColor-only saves to gradient fields
+  if (s.bgColor && !s.gradFrom) { s.gradFrom = s.gradTo = s.bgColor; }
+  if (!s.gradFrom) s.gradFrom = '#1a1a1a';
+  if (!s.gradTo)   s.gradTo   = s.gradFrom;
+}
+function sec(cat) {
+  if (!sections[cat]) sections[cat] = defSec(cat);
+  return sections[cat];
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PERSISTENCE
+// ─────────────────────────────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem('gtd_map_editor', JSON.stringify(sections)); } catch(e) {}
+}
+function load() {
+  try { const r = localStorage.getItem('gtd_map_editor'); if (r) sections = JSON.parse(r); } catch(e) {}
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const el = document.getElementById('cat-list');
+  el.innerHTML = '';
+
+  // Flat map entry at top
+  const ms  = sec(FLAT_MAP_CAT);
+  const mapItem = document.createElement('div');
+  mapItem.className = 'cat-item' + (curCat === FLAT_MAP_CAT ? ' active' : '');
+  const mapNodeCount = ms.nodes.length;
+  mapItem.innerHTML = `
+    <div class="cat-swatch" style="background:#333;border:1.5px solid #aaa60"></div>
+    <span class="cat-name" style="color:#fff">MAP (${mapNodeCount})</span>
+    ${ms.pathD && mapNodeCount > 0 ? '<span class="cat-done">✓</span>'
+      : ms.pathD || mapNodeCount > 0 ? '<span class="cat-partial">·</span>' : ''}
+  `;
+  mapItem.onclick = () => switchCat(FLAT_MAP_CAT);
+  el.appendChild(mapItem);
+
+  // Divider
+  const div = document.createElement('div');
+  div.style.cssText = 'height:1px;background:#2a2a2a;margin:4px 0;';
+  el.appendChild(div);
+
+  WORLD_ORDER.forEach(cat => {
+    const s  = sec(cat);
+    const th = WORLD_THEMES[cat] || { bg:'#444', color:'#888' };
+    const hasPath  = !!s.pathD;
+    const hasNodes = s.nodes.length > 0;
+    const item = document.createElement('div');
+    item.className = 'cat-item' + (cat === curCat ? ' active' : '');
+    item.innerHTML = `
+      <div class="cat-swatch" style="background:${th.bg};border:1.5px solid ${th.color}60"></div>
+      <span class="cat-name">${cat}</span>
+      ${hasPath && hasNodes ? '<span class="cat-done">✓</span>'
+        : hasPath || hasNodes ? '<span class="cat-partial">·</span>' : ''}
+    `;
+    item.onclick = () => switchCat(cat);
+    el.appendChild(item);
+  });
+}
+
+function switchCat(cat) {
+  curCat = cat;
+  pathHistory = [];
+  selDoodleIdx = null;
+  buildSidebar();
+  renderSection();
+  buildDoodleGrid();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// TOOL SWITCHING
+// ─────────────────────────────────────────────────────────────────────────
+const HINTS = {
+  path:      'Draw path freehand. Each stroke replaces current path.',
+  waypoints: 'Click to place points — smooth curve flows through all. Click a point to remove.',
+  nodes:     'Click to add a node (snaps to path). Click a node to remove it.',
+  doodles:   'Pick a doodle → click canvas to place. Drag to reposition.',
+};
+function setTool(tool) {
+  curTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tool === tool));
+  document.getElementById('bar-hint').textContent = HINTS[tool] || '';
+  document.getElementById('doodle-picker').style.display = tool === 'doodles' ? '' : 'none';
+  if (tool !== 'doodles') {
+    selDoodleIdx = null;
+    document.getElementById('pane-sel').style.display = 'none';
+  }
+  document.getElementById('map-svg').style.cursor =
+    (tool === 'path' || tool === 'waypoints') ? 'crosshair' : tool === 'nodes' ? 'cell' : 'default';
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SVG COORDINATE HELPER
+// ─────────────────────────────────────────────────────────────────────────
+const mapSvg = document.getElementById('map-svg');
+function svgPt(e) {
+  const cl = e.touches ? e.touches[0] : e;
+  const r  = mapSvg.getBoundingClientRect();
+  const sc = REF_W / r.width;           // SVG viewBox → screen pixel ratio
+  return { x: Math.round((cl.clientX - r.left) * sc),
+           y: Math.round((cl.clientY - r.top)  * sc) };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PATH SMOOTHING (RDP simplify → Catmull-Rom → cubic bezier)
+// ─────────────────────────────────────────────────────────────────────────
+function rdp(pts, eps) {
+  if (pts.length <= 2) return pts;
+  let maxD = 0, idx = 0;
+  const a = pts[0], b = pts[pts.length - 1];
+  const dx = b.x-a.x, dy = b.y-a.y, len = Math.sqrt(dx*dx+dy*dy)||1;
+  for (let i = 1; i < pts.length-1; i++) {
+    const d = Math.abs(dy*pts[i].x - dx*pts[i].y + b.x*a.y - b.y*a.x) / len;
+    if (d > maxD) { maxD = d; idx = i; }
+  }
+  if (maxD > eps) {
+    const l = rdp(pts.slice(0, idx+1), eps);
+    const r = rdp(pts.slice(idx), eps);
+    return [...l.slice(0,-1), ...r];
+  }
+  return [a, b];
+}
+
+function catmullToD(pts, tension = 6) {
+  // tension: lower = more curvy (3 = very curvy, 6 = smooth, 12 = almost straight)
+  if (pts.length < 2) return '';
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length-1; i++) {
+    const p0 = pts[Math.max(0,i-1)], p1 = pts[i];
+    const p2 = pts[i+1], p3 = pts[Math.min(pts.length-1,i+2)];
+    const c1x = p1.x + (p2.x-p0.x)/tension, c1y = p1.y + (p2.y-p0.y)/tension;
+    const c2x = p2.x - (p3.x-p1.x)/tension, c2y = p2.y - (p3.y-p1.y)/tension;
+    d += ` C ${r(c1x)} ${r(c1y)}, ${r(c2x)} ${r(c2y)}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+function r(n) { return Math.round(n); }
+
+// ─────────────────────────────────────────────────────────────────────────
+// ROAD RENDERING
+// ─────────────────────────────────────────────────────────────────────────
+const PATH_COLOR_DEFAULTS = {
+  road:'#ffffff', plain:'#ffffff', dash:'#ffffff', pipe:'#ffffff',
+  rail:'#cccccc', dirt:'#8B6310',  water:'#1565C0', lava:'#D84315', snow:'#ddeeff',
+};
+
+function buildPathStyle(style, color) {
+  const c = color || PATH_COLOR_DEFAULTS[style] || '#ffffff';
+  const styles = {
+    road:  [
+      { stroke:'rgba(0,0,0,0.55)',        width:18, dasharray:null },
+      { stroke:c,                          width:12, dasharray:null },
+      { stroke:'rgba(255,255,255,0.45)',  width:3,  dasharray:'10 14' },
+    ],
+    plain: [
+      { stroke:'rgba(0,0,0,0.4)',         width:8,  dasharray:null },
+      { stroke:c,                          width:3,  dasharray:null },
+      { stroke:'none',                    width:0,  dasharray:null },
+    ],
+    dash:  [
+      { stroke:'rgba(0,0,0,0.4)',         width:8,  dasharray:null },
+      { stroke:c,                          width:3,  dasharray:'14 10' },
+      { stroke:'none',                    width:0,  dasharray:null },
+    ],
+    pipe:  [
+      { stroke:'rgba(0,0,0,0.70)',        width:22, dasharray:null },
+      { stroke:c,                          width:16, dasharray:null },
+      { stroke:'rgba(255,255,255,0.6)',   width:8,  dasharray:null },
+    ],
+    rail:  [
+      { stroke:'rgba(50,35,15,0.85)',     width:16, dasharray:null },
+      { stroke:'rgba(160,120,60,0.9)',    width:10, dasharray:'3 13' },
+      { stroke:c,                          width:2,  dasharray:null },
+    ],
+    // ── New types ────────────────────────────────────────────────────────
+    dirt:  [
+      { stroke:'rgba(0,0,0,0.65)',        width:18, dasharray:null },
+      { stroke:c,                          width:14, dasharray:null },
+      { stroke:'rgba(0,0,0,0.45)',        width:8,  dasharray:'3 7' },
+    ],
+    water: [
+      { stroke:'rgba(0,0,0,0.55)',        width:24, dasharray:null },
+      { stroke:c,                          width:18, dasharray:null },
+      { stroke:'rgba(255,255,255,0.5)',   width:5,  dasharray:'22 10' },
+    ],
+    lava:  [
+      { stroke:'rgba(0,0,0,0.7)',         width:22, dasharray:null },
+      { stroke:c,                          width:16, dasharray:null },
+      { stroke:'rgba(255,210,40,0.75)',   width:4,  dasharray:null },
+    ],
+    snow:  [
+      { stroke:'rgba(100,140,200,0.4)',   width:20, dasharray:null },
+      { stroke:c,                          width:14, dasharray:null },
+      { stroke:'rgba(255,255,255,0.7)',   width:4,  dasharray:'4 8' },
+    ],
+  };
+  return styles[style] || styles.road;
+}
+
+function setRoad(d) {
+  const s   = sec(curCat);
+  const cfg = buildPathStyle(s.pathStyle || 'road', s.pathColor || null);
+  ['road-shadow','road-body','road-dash'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.setAttribute('d', d || '');
+    el.setAttribute('stroke', cfg[i].stroke);
+    el.setAttribute('stroke-width', String(cfg[i].width));
+    if (cfg[i].dasharray) el.setAttribute('stroke-dasharray', cfg[i].dasharray);
+    else el.removeAttribute('stroke-dasharray');
+  });
+}
+
+function changeStyle(style) {
+  const s = sec(curCat);
+  s.pathStyle = style;
+  s.pathColor = null; // reset to style default
+  document.getElementById('bar-path-color').value = PATH_COLOR_DEFAULTS[style] || '#ffffff';
+  save(); setRoad(s.pathD);
+}
+
+function resetPathColor() {
+  const s = sec(curCat);
+  s.pathColor = null;
+  document.getElementById('bar-path-color').value = PATH_COLOR_DEFAULTS[s.pathStyle || 'road'] || '#ffffff';
+  save(); setRoad(s.pathD);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// NODE PLACEMENT
+// ─────────────────────────────────────────────────────────────────────────
+function snapToRoad(x, y) {
+  const roadEl = document.getElementById('road-body');
+  const total  = roadEl.getTotalLength();
+  if (!total) return {x, y};
+  let best = Infinity, bx = x, by = y;
+  const steps = Math.ceil(total / 4);
+  for (let i = 0; i <= steps; i++) {
+    const pt = roadEl.getPointAtLength(i / steps * total);
+    const d  = (pt.x-x)**2 + (pt.y-y)**2;
+    if (d < best) { best = d; bx = r(pt.x); by = r(pt.y); }
+  }
+  return best < 50*50 ? {x:bx,y:by} : {x,y};
+}
+
+function placeNode(x, y) {
+  const snapped = snapToRoad(x, y);
+  sec(curCat).nodes.push(snapped);
+  save(); renderNodes();
+}
+function getPrevPathEnd() {
+  const idx = WORLD_ORDER.indexOf(curCat);
+  if (idx === 0) return null;
+  const prev = sec(WORLD_ORDER[idx - 1]);
+  if (!prev.pathD) return null;
+  const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  tmp.setAttribute('d', prev.pathD);
+  mapSvg.appendChild(tmp);
+  const ep = tmp.getPointAtLength(tmp.getTotalLength());
+  tmp.remove();
+  return { x: Math.round(ep.x), y: sec(curCat).height - 14 };
+}
+
+function removeNode(i) {
+  const s = sec(curCat);
+  s.nodes.splice(i, 1);
+  if (curTool === 'waypoints') {
+    s.pathPts.splice(i, 1);
+    pathHistory.push(s.pathD);
+    s.pathD = catmullToD(s.pathPts, 3);
+    setRoad(s.pathD); renderEntryDot();
+  }
+  save(); renderNodes();
+}
+
+function placeWaypoint(x, y) {
+  const s = sec(curCat);
+  // Auto-seed first point at connection from previous section
+  if (s.pathPts.length === 0) {
+    const conn = getPrevPathEnd();
+    if (conn) s.pathPts.push(conn);
+  }
+  pathHistory.push(s.pathD);
+  s.pathPts.push({ x, y });
+  s.pathD = catmullToD(s.pathPts, 3);
+  s.nodes = s.pathPts.map(p => ({ x: p.x, y: p.y }));
+  save(); setRoad(s.pathD); renderNodes(); renderEntryDot();
+}
+
+function renderNodes() {
+  const layer = document.getElementById('nodes-layer');
+  layer.innerHTML = '';
+  const s = sec(curCat);
+  const th = WORLD_THEMES[curCat] || {color:'#fff'};
+  s.nodes.forEach((n,i) => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('transform',`translate(${n.x},${n.y})`);
+    g.style.cursor = 'pointer';
+    g.innerHTML = `
+      <circle r="21" fill="${th.color}" stroke="rgba(255,255,255,0.65)" stroke-width="2.5"/>
+      <text text-anchor="middle" dominant-baseline="central" fill="#fff"
+            font-size="12" font-weight="700" font-family="system-ui">${i+1}</text>`;
+    g.addEventListener('click', e => { e.stopPropagation(); removeNode(i); });
+    layer.appendChild(g);
+  });
+  buildSidebar();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// DOODLE PICKER
+// ─────────────────────────────────────────────────────────────────────────
+function buildDoodleGrid() {
+  const grid   = document.getElementById('doodle-grid');
+  const noEl   = document.getElementById('no-doodles');
+  grid.innerHTML = '';
+  if (typeof DRAWINGS === 'undefined') { noEl.style.display=''; return; }
+  const pool = DRAWINGS.filter(d => d.category === curCat);
+  noEl.style.display = pool.length ? 'none' : '';
+  pool.forEach(d => {
+    const paths = d.strokes.map(s =>
+      `<path d="${s}" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`
+    ).join('');
+    const div = document.createElement('div');
+    div.className = 'dthumb' + (d.id === selDoodleId ? ' sel' : '');
+    div.dataset.id = d.id;
+    div.innerHTML = `<svg viewBox="0 0 255 255" width="76" height="76" color="#bbb">${paths}</svg>
+                     <div class="dthumb-lbl">${d.word}</div>`;
+    div.onclick = () => {
+      document.querySelectorAll('.dthumb').forEach(el => el.classList.remove('sel'));
+      div.classList.add('sel');
+      selDoodleId = d.id;
+    };
+    grid.appendChild(div);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// DOODLE PLACEMENT + DRAG
+// ─────────────────────────────────────────────────────────────────────────
+function placeDoodle(x, y) {
+  if (!selDoodleId) { document.getElementById('bar-hint').textContent = '← pick a doodle first'; return; }
+  const size = Math.round(40 + Math.random() * 90); // 40–130 random
+  sec(curCat).doodles.push({ id: selDoodleId, x, y, rot:0, size, strokeW:5, opq:100, color:randomDoodleColor() });
+  save(); renderDoodles();
+}
+
+function renderDoodles() {
+  const layer = document.getElementById('doodles-layer');
+  layer.innerHTML = '';
+  if (typeof DRAWINGS === 'undefined') return;
+  const s  = sec(curCat);
+  const th = WORLD_THEMES[curCat] || {color:'#888'};
+  s.doodles.forEach((dd,i) => {
+    const drw = DRAWINGS.find(d => d.id === dd.id);
+    if (!drw) return;
+    const dColor = dd.color || '#ffffff';
+    const dStrokeW = dd.strokeW || 5;
+    const paths = drw.strokes.map(s =>
+      `<path d="${s}" fill="none" stroke="${dColor}" stroke-width="${dStrokeW}" stroke-linecap="round" stroke-linejoin="round"/>`
+    ).join('');
+    const sc = dd.size / 255;
+    const g  = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('opacity', dd.opq / 100);
+    g.setAttribute('transform',
+      `translate(${dd.x},${dd.y}) rotate(${dd.rot}) scale(${sc}) translate(-127.5,-127.5)`);
+    g.innerHTML = paths;
+    // Highlight if selected
+    if (curTool === 'doodles' && selDoodleIdx === i) {
+      const hl = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      const hw = (dd.size/2+6), ht = (dd.size/2+6);
+      hl.setAttribute('x', -hw); hl.setAttribute('y', -ht);
+      hl.setAttribute('width', hw*2); hl.setAttribute('height', ht*2);
+      hl.setAttribute('fill', 'none'); hl.setAttribute('stroke', '#4c4');
+      hl.setAttribute('stroke-width', '1.5'); hl.setAttribute('stroke-dasharray', '4 3');
+      hl.setAttribute('transform',
+        `translate(${dd.x},${dd.y}) rotate(${dd.rot})`);
+      layer.appendChild(hl);
+    }
+    g.style.cursor = curTool === 'doodles' ? 'move' : 'default';
+    // Click to select
+    g.addEventListener('click', e => {
+      if (curTool !== 'doodles') return;
+      e.stopPropagation();
+      selDoodleIdx = i;
+      document.getElementById('sel-rot').value       = dd.rot;
+      document.getElementById('lbl-rot').textContent = dd.rot + '°';
+      document.getElementById('sel-size').value      = dd.size;
+      document.getElementById('lbl-size').textContent = dd.size;
+      document.getElementById('sel-strokew').value   = dd.strokeW || 5;
+      document.getElementById('lbl-strokew').textContent = dd.strokeW || 5;
+      document.getElementById('sel-opq').value       = dd.opq;
+      document.getElementById('lbl-opq').textContent = dd.opq + '%';
+      document.getElementById('sel-color').value     = dd.color || '#ffffff';
+      document.getElementById('pane-sel').style.display = '';
+      renderDoodles();
+    });
+    // Drag
+    g.addEventListener('mousedown', e => {
+      if (curTool !== 'doodles') return;
+      e.stopPropagation();
+      selDoodleIdx = i;
+      const orig = {x: dd.x, y: dd.y};
+      const start = svgPt(e);
+      const onMove = ev => {
+        const cur = svgPt(ev);
+        dd.x = orig.x + cur.x - start.x;
+        dd.y = orig.y + cur.y - start.y;
+        renderDoodles();
+      };
+      const onUp = () => {
+        save();
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+    layer.appendChild(g);
+  });
+}
+
+function selProp(prop, val) {
+  if (selDoodleIdx === null) return;
+  const dd = sec(curCat).doodles[selDoodleIdx];
+  if (!dd) return;
+  dd[prop] = val;
+  document.getElementById('lbl-rot').textContent     = dd.rot     + '°';
+  document.getElementById('lbl-size').textContent    = dd.size;
+  document.getElementById('lbl-strokew').textContent = dd.strokeW || 5;
+  document.getElementById('lbl-opq').textContent     = dd.opq     + '%';
+  save(); renderDoodles();
+}
+
+function resetDoodleColor() {
+  if (selDoodleIdx === null) return;
+  const dd = sec(curCat).doodles[selDoodleIdx];
+  if (!dd) return;
+  dd.color = '#ffffff';
+  document.getElementById('sel-color').value = '#ffffff';
+  save(); renderDoodles();
+}
+
+function delSelDoodle() {
+  if (selDoodleIdx === null) return;
+  sec(curCat).doodles.splice(selDoodleIdx,1);
+  selDoodleIdx = null;
+  document.getElementById('pane-sel').style.display = 'none';
+  save(); renderDoodles();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SECTION RENDER
+// ─────────────────────────────────────────────────────────────────────────
+function renderSection() {
+  const s  = sec(curCat);
+  const th = WORLD_THEMES[curCat] || {color:'#888'};
+
+  migrateSection(s);
+  document.getElementById('bar-cat').textContent     = curCat;
+  document.getElementById('bar-cat').style.color     = th.color;
+  document.getElementById('inp-height').value        = s.height;
+  document.getElementById('bar-grad-from').value     = s.gradFrom;
+  document.getElementById('bar-grad-to').value       = s.gradTo;
+  document.getElementById('bar-style').value         = s.pathStyle || 'road';
+  document.getElementById('bar-path-color').value    = s.pathColor || PATH_COLOR_DEFAULTS[s.pathStyle || 'road'] || '#ffffff';
+
+  mapSvg.setAttribute('height', s.height);
+  document.getElementById('svg-bg').setAttribute('height', s.height);
+  document.getElementById('grad-stop-from').setAttribute('stop-color', s.gradFrom);
+  document.getElementById('grad-stop-to').setAttribute('stop-color', s.gradTo);
+
+  setRoad(s.pathD);
+  renderEntryDot();
+  renderNodes();
+  renderDoodles();
+}
+
+function renderEntryDot() {
+  const dot = document.getElementById('entry-dot');
+  const lbl = document.getElementById('entry-lbl');
+  if (curCat === FLAT_MAP_CAT) { dot.setAttribute('display','none'); lbl.setAttribute('display','none'); return; }
+  const idx = WORLD_ORDER.indexOf(curCat);
+  if (idx === 0) { dot.setAttribute('display','none'); lbl.setAttribute('display','none'); return; }
+  const prev = sec(WORLD_ORDER[idx-1]);
+  if (!prev.pathD) { dot.setAttribute('display','none'); lbl.setAttribute('display','none'); return; }
+  // Find end point of previous path — but path goes bottom→top,
+  // so the TOP of the previous section (path end) connects to BOTTOM of this section (path start).
+  const tmp = document.createElementNS('http://www.w3.org/2000/svg','path');
+  tmp.setAttribute('d', prev.pathD);
+  mapSvg.appendChild(tmp);
+  const ep = tmp.getPointAtLength(tmp.getTotalLength());
+  tmp.remove();
+  // Show entry guide at BOTTOM of canvas (where you start drawing)
+  const H = sec(curCat).height;
+  dot.setAttribute('cx', r(ep.x)); dot.setAttribute('cy', H - 14);
+  lbl.setAttribute('x', r(ep.x)); lbl.setAttribute('y', H - 28);
+  lbl.textContent = '↑ start here';
+  dot.setAttribute('display',''); lbl.setAttribute('display','');
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CANVAS EVENT HANDLERS
+// ─────────────────────────────────────────────────────────────────────────
+mapSvg.addEventListener('mousedown', e => {
+  if (e.target.closest('#nodes-layer, #doodles-layer')) return;
+  if (curTool !== 'path') return;
+  drawing = true; rawPts = [svgPt(e)];
+  document.getElementById('live-path').setAttribute('d', `M ${rawPts[0].x} ${rawPts[0].y}`);
+});
+
+mapSvg.addEventListener('mousemove', e => {
+  if (!drawing) return;
+  const pt = svgPt(e);
+  const last = rawPts[rawPts.length-1];
+  if (Math.abs(pt.x-last.x)>2 || Math.abs(pt.y-last.y)>2) {
+    rawPts.push(pt);
+    document.getElementById('live-path').setAttribute('d',
+      'M '+rawPts.map(p=>`${p.x} ${p.y}`).join(' L '));
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if (!drawing) return;
+  drawing = false;
+  document.getElementById('live-path').setAttribute('d','');
+  if (rawPts.length < 2) return;
+  const simplified = rdp(rawPts, 4);
+  const d = catmullToD(simplified);
+  const s = sec(curCat);
+  pathHistory.push(s.pathD);        // save for undo
+  if (pathHistory.length > 30) pathHistory.shift();
+  s.pathD = d; s.pathPts = simplified;
+  save(); setRoad(d);
+});
+
+mapSvg.addEventListener('click', e => {
+  if (e.target.closest('#nodes-layer')) return;
+  if (e.target.closest('#doodles-layer') && curTool === 'doodles') return;
+  const pt = svgPt(e);
+  if (curTool === 'nodes')     placeNode(pt.x, pt.y);
+  if (curTool === 'waypoints') placeWaypoint(pt.x, pt.y);
+  if (curTool === 'doodles')   { selDoodleIdx = null; placeDoodle(pt.x, pt.y); }
+});
+
+// Touch
+mapSvg.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const pt = svgPt(e);
+  if (curTool === 'path')      { drawing = true; rawPts = [pt]; }
+  if (curTool === 'nodes')     placeNode(pt.x, pt.y);
+  if (curTool === 'waypoints') placeWaypoint(pt.x, pt.y);
+  if (curTool === 'doodles')   placeDoodle(pt.x, pt.y);
+}, {passive:false});
+
+mapSvg.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!drawing) return;
+  const pt = svgPt(e), last = rawPts[rawPts.length-1];
+  if (Math.abs(pt.x-last.x)>2||Math.abs(pt.y-last.y)>2) rawPts.push(pt);
+  document.getElementById('live-path').setAttribute('d',
+    'M '+rawPts.map(p=>`${p.x} ${p.y}`).join(' L '));
+}, {passive:false});
+
+mapSvg.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (!drawing) return;
+  drawing = false;
+  document.getElementById('live-path').setAttribute('d','');
+  if (rawPts.length < 2) return;
+  const d = catmullToD(rdp(rawPts,4));
+  const s = sec(curCat);
+  pathHistory.push(s.pathD);
+  s.pathD = d; save(); setRoad(d);
+}, {passive:false});
+
+// ─────────────────────────────────────────────────────────────────────────
+// TOOLBAR CONTROLS
+// ─────────────────────────────────────────────────────────────────────────
+document.getElementById('inp-height').addEventListener('change', function() {
+  sec(curCat).height = Math.max(200, Math.min(3000, +this.value));
+  save(); renderSection();
+});
+document.getElementById('bar-grad-from').addEventListener('input', function() {
+  sec(curCat).gradFrom = this.value;
+  document.getElementById('grad-stop-from').setAttribute('stop-color', this.value);
+  save();
+});
+document.getElementById('bar-grad-to').addEventListener('input', function() {
+  sec(curCat).gradTo = this.value;
+  document.getElementById('grad-stop-to').setAttribute('stop-color', this.value);
+  save();
+});
+document.getElementById('bar-path-color').addEventListener('input', function() {
+  sec(curCat).pathColor = this.value;
+  save(); setRoad(sec(curCat).pathD);
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// ACTIONS
+// ─────────────────────────────────────────────────────────────────────────
+function doUndo() {
+  if (!pathHistory.length) return;
+  const s = sec(curCat);
+  s.pathD = pathHistory.pop();
+  save(); setRoad(s.pathD);
+}
+function clearNodes()  { sec(curCat).nodes=[]; save(); renderNodes(); }
+function clearSection(){ sections[curCat]=defSec(curCat); pathHistory=[]; save(); renderSection(); buildDoodleGrid(); }
+
+function autoGeneratePath() {
+  const s = sec(curCat);
+  const H = s.height, W = REF_W;
+  const MARGIN = 28;
+
+  // Find start X from previous category's path end point
+  let startX = Math.round(W / 2);
+  const catIdx = WORLD_ORDER.indexOf(curCat);
+  if (catIdx > 0) {
+    const prevSec = sec(WORLD_ORDER[catIdx - 1]);
+    if (prevSec.pathD) {
+      const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      tmp.setAttribute('d', prevSec.pathD);
+      mapSvg.appendChild(tmp);
+      const ep = tmp.getPointAtLength(tmp.getTotalLength());
+      tmp.remove();
+      startX = Math.round(Math.max(MARGIN, Math.min(W - MARGIN, ep.x)));
+    }
+  }
+
+  // Seeded RNG from category name for reproducible shapes
+  let seed = curCat.split('').reduce((a, c) => a + c.charCodeAt(0), 7);
+  const rnd = () => {
+    seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
+    return (seed >>> 0) / 4294967296;
+  };
+
+  // Build snake: first point locked to startX at bottom, then alternate zones
+  const numPts = Math.max(6, Math.round(H / 65));
+  const zones  = [[MARGIN, W * 0.38], [W * 0.62, W - MARGIN]];
+  // pick zone for second point based on startX position
+  let zone = startX < W / 2 ? 1 : 0;
+  const pts = [{ x: startX, y: H - 14 }]; // match entry dot Y
+
+  for (let i = 1; i < numPts; i++) {
+    const t  = i / (numPts - 1);
+    const y  = Math.round(H - 14 - t * (H - MARGIN * 2));
+    const [lo, hi] = zones[zone];
+    const x  = Math.round(lo + rnd() * (hi - lo));
+    pts.push({ x, y });
+    zone = 1 - zone;
+  }
+
+  const d = catmullToD(pts, 3); // tension=3 → more curvy
+  pathHistory.push(s.pathD);
+  s.pathD = d; s.pathPts = pts;
+  save(); setRoad(d); renderEntryDot();
+
+  // Place nodes evenly spaced along the new path (200 for flat map, 12 for category)
+  requestAnimationFrame(() => {
+    const roadEl = document.getElementById('road-body');
+    const total  = roadEl.getTotalLength();
+    if (!total) return;
+    const N = curCat === FLAT_MAP_CAT ? 200 : 12;
+    s.nodes = Array.from({ length: N }, (_, i) => {
+      const pt = roadEl.getPointAtLength((i + 0.5) / N * total);
+      return { x: Math.round(pt.x), y: Math.round(pt.y) };
+    });
+    save(); renderNodes();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// EXPORT
+// ─────────────────────────────────────────────────────────────────────────
+function normPath(d, H) {
+  // All numbers in the path alternate as x,y pairs — scale x÷REF_W, y÷H
+  let idx = 0;
+  return d.replace(/[-\d.]+(?:\.\d+)?/g, n => {
+    const v = parseFloat(n);
+    const scaled = idx % 2 === 0 ? +(v / REF_W).toFixed(4) : +(v / H).toFixed(4);
+    idx++;
+    return scaled;
+  });
+}
+
+function doExport() {
+  const exportCats = [];
+
+  // Always export flat MAP section first if it has a path
+  const flatSec = sec(FLAT_MAP_CAT);
+  if (flatSec.pathD) exportCats.push(FLAT_MAP_CAT);
+
+  // Then all category sections that have a path
+  WORLD_ORDER.forEach(cat => { if (sec(cat).pathD) exportCats.push(cat); });
+
+  const lines = exportCats.map(cat => {
+    const s = sec(cat);
+    const H = s.height;
+    const np = s.pathD ? normPath(s.pathD, H) : '';
+    const nn = s.nodes.map(n => ({
+      x: +(n.x / REF_W).toFixed(4),
+      y: +(n.y / H).toFixed(4),
+    }));
+    const nd = s.doodles.map(d => {
+      const o = {
+        id: d.id,
+        x:  +(d.x / REF_W).toFixed(4),
+        y:  +(d.y / H).toFixed(4),
+        rot: d.rot, size: d.size, strokeW: d.strokeW || 5, opq: d.opq,
+        color: d.color || '#ffffff',
+      };
+      return o;
+    });
+    return `  // ── ${cat.toUpperCase()} ──
+  { category:${JSON.stringify(cat)}, gradFrom:${JSON.stringify(s.gradFrom||'#111')}, gradTo:${JSON.stringify(s.gradTo||s.gradFrom||'#111')}, height:${H}, pathStyle:${JSON.stringify(s.pathStyle||'road')}, pathColor:${JSON.stringify(s.pathColor||null)},
+    path:${JSON.stringify(np)},
+    nodes:${JSON.stringify(nn)},
+    doodles:${JSON.stringify(nd)} }`;
+  });
+
+  const code = `// Generated by draw_map.html — paste into js/map_sections.js
+const MAP_SECTIONS = [\n${lines.join(',\n')}\n];\n`;
+
+  navigator.clipboard.writeText(code).then(() => {
+    alert('✓ Copied! Paste into www/js/map_sections.js');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    Object.assign(ta.style, {
+      position:'fixed', top:'10px', left:'50%', transform:'translateX(-50%)',
+      width:'80vw', height:'70vh', zIndex:'9999',
+      background:'#1a1a1a', color:'#ccc', padding:'12px',
+      border:'1px solid #444', borderRadius:'8px', fontSize:'11px',
+    });
+    document.body.appendChild(ta);
+    ta.select();
+    ta.addEventListener('blur', () => ta.remove());
+  });
+}
+
+// Keyboard shortcuts
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'z') doUndo();
+  if (e.key === 'p') setTool('path');
+  if (e.key === 'w') setTool('waypoints');
+  if (e.key === 'n') setTool('nodes');
+  if (e.key === 'd') setTool('doodles');
+  if (e.key === 'Delete' && selDoodleIdx !== null) delSelDoodle();
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// MAP PREVIEW
+// ─────────────────────────────────────────────────────────────────────────
+function showPreview() {
+  const overlay = document.getElementById('preview-overlay');
+  const mapEl   = document.getElementById('preview-map');
+  const W = REF_W;
+
+  // Include flat map section first (if drawn), then category sections
+  const cats = [];
+  if (sec(FLAT_MAP_CAT).pathD) cats.push(FLAT_MAP_CAT);
+  WORLD_ORDER.forEach(cat => { if (sec(cat).pathD) cats.push(cat); });
+  if (!cats.length) { alert('No paths drawn yet.'); return; }
+
+  // Stack bottom-to-top: cats[0] at bottom, cats[last] at top
+  const totalH = cats.reduce((a, cat) => a + sec(cat).height, 0);
+  const sTopY = {};
+  { let cum = 0;
+    for (let i = 0; i < cats.length; i++) {
+      sTopY[cats[i]] = totalH - cum - sec(cats[i]).height;
+      cum += sec(cats[i]).height;
+    }
+  }
+
+  mapEl.innerHTML = '';
+  mapEl.style.height = totalH + 'px';
+
+  cats.forEach(cat => {
+    const s    = sec(cat);
+    const topY = sTopY[cat];
+    const H    = s.height;
+
+    // ── Background ───────────────────────────────────────────────────────
+    const bg = document.createElement('div');
+    bg.style.cssText = `position:absolute;top:${topY}px;left:0;right:0;height:${H}px;` +
+      `background:linear-gradient(to top,${s.gradFrom||'#111'},${s.gradTo||'#222'});`;
+    mapEl.appendChild(bg);
+
+    // ── Watermark label ───────────────────────────────────────────────────
+    if (cat !== FLAT_MAP_CAT) {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = `position:absolute;top:${topY}px;height:${H}px;left:0;right:0;` +
+        `display:flex;align-items:center;justify-content:center;` +
+        `font-family:system-ui;font-size:3rem;letter-spacing:10px;` +
+        `color:rgba(255,255,255,0.06);text-transform:uppercase;pointer-events:none;`;
+      lbl.textContent = cat;
+      mapEl.appendChild(lbl);
+    }
+
+    // ── Doodles ───────────────────────────────────────────────────────────
+    if (s.doodles && s.doodles.length) {
+      const dsvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      dsvg.style.cssText = `position:absolute;top:${topY}px;left:0;width:${W}px;height:${H}px;` +
+        `overflow:visible;pointer-events:none;`;
+      dsvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      s.doodles.forEach(dd => {
+        const drw = DRAWINGS.find(d => d.id === dd.id);
+        if (!drw || !drw.strokes || !drw.strokes.length) return;
+        const paths = drw.strokes.map(str =>
+          `<path d="${str}" fill="none" stroke="${dd.color||'#fff'}" stroke-width="${dd.strokeW||5}" stroke-linecap="round" stroke-linejoin="round"/>`
+        ).join('');
+        const sc = (dd.size||70) / 255;
+        const g  = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('opacity', (dd.opq||100) / 100);
+        g.setAttribute('transform',
+          `translate(${dd.x},${dd.y}) rotate(${dd.rot||0}) scale(${sc}) translate(-127.5,-127.5)`);
+        g.innerHTML = paths;
+        dsvg.appendChild(g);
+      });
+      mapEl.appendChild(dsvg);
+    }
+
+    // ── Path ─────────────────────────────────────────────────────────────
+    if (s.pathD) {
+      const cfg  = buildPathStyle(s.pathStyle || 'road', s.pathColor || null);
+      const psvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      psvg.style.cssText = `position:absolute;top:${topY}px;left:0;width:${W}px;height:${H}px;` +
+        `overflow:visible;pointer-events:none;`;
+      psvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      cfg.forEach(layer => {
+        if (layer.stroke === 'none' || !layer.width) return;
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p.setAttribute('d', s.pathD);
+        p.setAttribute('fill', 'none');
+        p.setAttribute('stroke', layer.stroke);
+        p.setAttribute('stroke-width', String(layer.width));
+        p.setAttribute('stroke-linecap', 'round');
+        p.setAttribute('stroke-linejoin', 'round');
+        if (layer.dasharray) p.setAttribute('stroke-dasharray', layer.dasharray);
+        psvg.appendChild(p);
+      });
+      mapEl.appendChild(psvg);
+    }
+
+    // ── Nodes ─────────────────────────────────────────────────────────────
+    const BUBBLE = 38;
+    s.nodes.forEach((n, i) => {
+      const bub = document.createElement('div');
+      bub.style.cssText =
+        `position:absolute;left:${n.x - BUBBLE/2}px;top:${topY + n.y - BUBBLE/2}px;` +
+        `width:${BUBBLE}px;height:${BUBBLE}px;` +
+        `border-radius:44% 56% 52% 48% / 48% 44% 56% 52%;` +
+        `background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.55);` +
+        `display:flex;align-items:center;justify-content:center;` +
+        `font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);font-family:system-ui;`;
+      bub.textContent = i + 1;
+      mapEl.appendChild(bub);
+    });
+  });
+
+  overlay.style.display = 'flex';
+  // Scroll to bottom = start of map
+  requestAnimationFrame(() => { overlay.scrollTop = overlay.scrollHeight; });
+}
+
+function closePreview() {
+  document.getElementById('preview-overlay').style.display = 'none';
+}
+
+// Close on Escape
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('preview-overlay').style.display !== 'none') {
+    closePreview();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────
+load();
+buildSidebar();
+buildDoodleGrid();
+renderSection();
+setTool('path');
+</script>
+</body>
+</html>

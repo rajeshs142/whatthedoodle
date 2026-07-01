@@ -1,0 +1,13 @@
+{
+  "appId": "com.rajeshs142.whatthedoodle",
+  "appName": "What the Doodle?",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#f7f5f0"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

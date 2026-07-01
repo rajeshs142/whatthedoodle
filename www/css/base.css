@@ -1,0 +1,88 @@
+:root {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --border: #e0dbd0;
+  --text: #1a1814;
+  --sub: #8a8070;
+  --ink: #1a1814;
+  --correct: #2d6a4f;
+  --correct-bg: #d8f3dc;
+  --wrong: #c1121f;
+  --wrong-bg: #fde0e0;
+  --warn: #e07c00;
+  --canvas-bg: #fefcf8;
+  --stroke-color: #1a1814;
+  --timer-full: #2d6a4f;
+  --timer-warn: #e07c00;
+  --timer-danger: #c1121f;
+  --frame: #c0a870;
+  --frame-dark: #8a6840;
+  --frame-shadow: rgba(0,0,0,0.18);
+}
+.dark {
+  --bg: #141210; --surface: #1e1c18; --border: #2e2c26;
+  --text: #f0ece0; --sub: #706858; --ink: #f0ece0;
+  --correct: #52b788; --correct-bg: #1a2e22;
+  --wrong: #e63946; --wrong-bg: #2e1a1c;
+  --canvas-bg: #1a1814; --stroke-color: #f0ece0;
+  --timer-full: #52b788; --timer-warn: #e07c00; --timer-danger: #e63946;
+  --frame: #3a3028; --frame-dark: #1c1810; --frame-shadow: rgba(0,0,0,0.55);
+}
+.sepia {
+  --bg: #f2e8d4; --surface: #faf4e6; --border: #cdb898;
+  --text: #3b2510; --sub: #8a6f50; --ink: #3b2510;
+  --correct: #5a7a32; --correct-bg: #dde8c0;
+  --wrong: #b83020; --wrong-bg: #f0ddd8;
+  --canvas-bg: #fdf8ee; --stroke-color: #3b2510;
+  --timer-full: #5a7a32; --timer-warn: #b87800; --timer-danger: #b83020;
+  --frame: #b89060; --frame-dark: #7a5030; --frame-shadow: rgba(0,0,0,0.2);
+}
+.ocean {
+  --bg: #e8f2f8; --surface: #f4faff; --border: #b8d4e4;
+  --text: #0c2840; --sub: #507090; --ink: #0c2840;
+  --correct: #1a8070; --correct-bg: #c8ece8;
+  --wrong: #c03040; --wrong-bg: #fce0e4;
+  --canvas-bg: #f0f8fc; --stroke-color: #0c2840;
+  --timer-full: #1a8070; --timer-warn: #b87000; --timer-danger: #c03040;
+  --frame: #5888a8; --frame-dark: #2a5070; --frame-shadow: rgba(0,0,0,0.18);
+}
+.forest {
+  --bg: #121c10; --surface: #1a2818; --border: #263c20;
+  --text: #c8e0b0; --sub: #608050; --ink: #c8e0b0;
+  --correct: #70c040; --correct-bg: #183010;
+  --wrong: #e05040; --wrong-bg: #2a1010;
+  --canvas-bg: #161e14; --stroke-color: #c8e0b0;
+  --timer-full: #70c040; --timer-warn: #d09020; --timer-danger: #e05040;
+  --frame: #2c4020; --frame-dark: #141e10; --frame-shadow: rgba(0,0,0,0.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { height: 100dvh; opacity: 0; transition: opacity 0.35s ease; }
+body.ready { opacity: 1; }
+body {
+  background: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  touch-action: manipulation;
+  /* Hide Android system bars via meta-theme; safe-area covers notch/nav */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 479px) {
+  .icon-btn { padding: 4px 5px; }
+  .icon-btn svg { width: 14px; height: 14px; }
+}
+.icon-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 8px; cursor: pointer;
+  color: var(--sub); display: flex; align-items: center;
+  transition: all 0.15s;
+}
+.icon-btn:hover { background: var(--border); color: var(--text); }
+.icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
