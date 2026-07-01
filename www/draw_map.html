@@ -864,13 +864,14 @@ window.addEventListener('mouseup', () => {
   drawing = false;
   document.getElementById('live-path').setAttribute('d','');
   if (rawPts.length < 2) return;
-  const simplified = rdp(rawPts, 4);
-  const d = catmullToD(simplified);
+  const seg = catmullToD(rdp(rawPts, 4));
   const s = sec(curCat);
-  pathHistory.push(s.pathD);        // save for undo
+  pathHistory.push(s.pathD);
   if (pathHistory.length > 30) pathHistory.shift();
-  s.pathD = d; s.pathPts = simplified;
-  save(); setRoad(d);
+  // Append segment to existing path
+  s.pathD = s.pathD ? s.pathD + ' ' + seg.replace(/^M[\d. ]+/, d => 'L ' + d.slice(1).trim()) : seg;
+  s.pathPts = [];
+  save(); setRoad(s.pathD);
 });
 
 mapSvg.addEventListener('click', e => {
@@ -882,36 +883,40 @@ mapSvg.addEventListener('click', e => {
   if (curTool === 'doodles')   { selDoodleIdx = null; placeDoodle(pt.x, pt.y); }
 });
 
-// Touch
+// Touch — passive so scroll works freely; strokes are APPENDED to existing path
 mapSvg.addEventListener('touchstart', e => {
-  e.preventDefault();
   const pt = svgPt(e);
   if (curTool === 'path')      { drawing = true; rawPts = [pt]; }
   if (curTool === 'nodes')     placeNode(pt.x, pt.y);
   if (curTool === 'waypoints') placeWaypoint(pt.x, pt.y);
   if (curTool === 'doodles')   placeDoodle(pt.x, pt.y);
-}, {passive:false});
+}, {passive:true});
 
 mapSvg.addEventListener('touchmove', e => {
-  e.preventDefault();
   if (!drawing) return;
   const pt = svgPt(e), last = rawPts[rawPts.length-1];
   if (Math.abs(pt.x-last.x)>2||Math.abs(pt.y-last.y)>2) rawPts.push(pt);
-  document.getElementById('live-path').setAttribute('d',
-    'M '+rawPts.map(p=>`${p.x} ${p.y}`).join(' L '));
-}, {passive:false});
+  const liveD = 'M '+rawPts.map(p=>`${p.x} ${p.y}`).join(' L ');
+  document.getElementById('live-path').setAttribute('d', liveD);
+}, {passive:true});
 
 mapSvg.addEventListener('touchend', e => {
-  e.preventDefault();
   if (!drawing) return;
   drawing = false;
   document.getElementById('live-path').setAttribute('d','');
   if (rawPts.length < 2) return;
-  const d = catmullToD(rdp(rawPts,4));
+  const seg = catmullToD(rdp(rawPts, 4));
   const s = sec(curCat);
   pathHistory.push(s.pathD);
-  s.pathD = d; save(); setRoad(d);
-}, {passive:false});
+  // Append segment to existing path instead of replacing it
+  s.pathD = s.pathD ? s.pathD + ' ' + seg.replace(/^M[\d. ]+/, d => {
+    // Replace leading M with L to connect stroke to previous path end
+    const coords = d.slice(1).trim();
+    return 'L ' + coords;
+  }) : seg;
+  s.pathPts = [];  // freehand mode — pathPts not used for append
+  save(); setRoad(s.pathD);
+}, {passive:true});
 
 // ─────────────────────────────────────────────────────────────────────────
 // TOOLBAR CONTROLS
