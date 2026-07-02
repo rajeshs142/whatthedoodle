@@ -130,14 +130,47 @@ function buildMapSequence() {
 
   // ── Flat single-path mode ─────────────────────────────────────────────────
   const flatMs = (typeof MAP_SECTIONS !== 'undefined')
-    ? MAP_SECTIONS.find(ms => ms.category === 'map' && ms.path && ms.nodes && ms.nodes.length > 0)
+    ? MAP_SECTIONS.find(ms => ms.category === 'map' && ms.path)
     : null;
 
   if (flatMs) {
     const MAX_NODES = 200;
-    // Seeded shuffle of all drawings — same order for all users
     const pool = DRAWINGS.slice(); // already shuffled by CONFIG.seed in shuffleDrawings()
-    const count = Math.min(pool.length, flatMs.nodes.length, MAX_NODES);
+
+    // Use stored nodes if available, otherwise auto-compute equidistant nodes from path
+    let msNodes = flatMs.nodes && flatMs.nodes.length > 0 ? flatMs.nodes : null;
+    if (!msNodes) {
+      const N = Math.min(pool.length, MAX_NODES);
+      const W = 375, H = flatMs.height || 10000;
+      // Denormalize path coords (x×W, y×H) resetting counter at each command letter
+      let _ci = 0;
+      const denormed = flatMs.path.replace(
+        /([MmCcLlZz])|([- ]?[-\d.]+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
+        (m, cmd, num) => {
+          if (cmd) { _ci = 0; return cmd; }
+          const v = parseFloat(num);
+          const out = _ci % 2 === 0 ? +(v * W).toFixed(1) : +(v * H).toFixed(1);
+          _ci++;
+          return (num[0] === ' ' ? ' ' : '') + out;
+        }
+      );
+      try {
+        const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        svgEl.setAttribute('d', denormed);
+        document.body.appendChild(svgEl);
+        const total = svgEl.getTotalLength();
+        msNodes = Array.from({ length: N }, (_, i) => {
+          const pt = svgEl.getPointAtLength((i + 0.5) / N * total);
+          return { x: +(pt.x / W).toFixed(4), y: +(pt.y / H).toFixed(4) };
+        });
+        svgEl.remove();
+        flatMs.nodes = msNodes; // cache so we don't recompute on next call
+      } catch(e) {
+        msNodes = [];
+      }
+    }
+
+    const count = Math.min(pool.length, msNodes.length, MAX_NODES);
     const sections = [{ category: 'map', drawings: pool.slice(0, count), globalStart: 0, lap: 0 }];
     const nodes = pool.slice(0, count).map((drawing, i) => ({
       drawing, category: drawing.category || 'misc', sectionIdx: 0, posInSection: i
