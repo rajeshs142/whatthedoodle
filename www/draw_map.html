@@ -1099,7 +1099,7 @@ function autoGeneratePath() {
     if (!total) return;
     const N = curCat === FLAT_MAP_CAT ? 200 : 12;
     s.nodes = Array.from({ length: N }, (_, i) => {
-      const pt = roadEl.getPointAtLength((i + 0.5) / N * total);
+      const pt = roadEl.getPointAtLength(i / (N - 1) * total);
       return { x: Math.round(pt.x), y: Math.round(pt.y) };
     });
     save(); renderNodes(); buildSidebar();

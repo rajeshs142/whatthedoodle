@@ -160,7 +160,7 @@ function buildMapSequence() {
         document.body.appendChild(svgEl);
         const total = svgEl.getTotalLength();
         msNodes = Array.from({ length: N }, (_, i) => {
-          const pt = svgEl.getPointAtLength((i + 0.5) / N * total);
+          const pt = svgEl.getPointAtLength(i / (N - 1) * total);
           return { x: +(pt.x / W).toFixed(4), y: +(pt.y / H).toFixed(4) };
         });
         svgEl.remove();
