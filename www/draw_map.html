@@ -233,7 +233,9 @@ body {
 
   <div class="pane">
     <div class="pane-title">Actions</div>
-    <button class="act-btn ok" onclick="autoGeneratePath()">⚡ Auto Path + Nodes</button>
+    <button class="act-btn ok" onclick="autoGeneratePath()">⚡ Auto Path</button>
+    <button class="act-btn ok" onclick="autoGenNodes()">⬤ Auto Nodes</button>
+    <button class="act-btn ok" onclick="importPath()">⬆ Import Path</button>
     <button class="act-btn ok" onclick="autoPlaceDoodles()">🎨 Auto Place Doodles</button>
     <button class="act-btn" onclick="doUndo()">⟵ Undo Path</button>
     <button class="act-btn" onclick="clearNodes()">Clear Nodes</button>
@@ -1135,8 +1137,11 @@ function autoGeneratePath() {
   pathHistory.push(s.pathD);
   s.pathD = d; s.pathPts = [];
   save(); setRoad(d); renderEntryDot();
+}
 
-  // Place nodes evenly spaced along the new path (200 for flat map, 12 for category)
+function autoGenNodes() {
+  const s = sec(curCat);
+  if (!s.pathD) { alert('Draw or import a path first.'); return; }
   requestAnimationFrame(() => {
     const roadEl = document.getElementById('road-body');
     const total  = roadEl.getTotalLength();
@@ -1147,6 +1152,33 @@ function autoGeneratePath() {
       return { x: Math.round(pt.x), y: Math.round(pt.y) };
     });
     save(); renderNodes(); buildSidebar();
+  });
+}
+
+function importPath() {
+  // Read SVG path d="..." or raw path string from clipboard
+  navigator.clipboard.readText().then(text => {
+    // Accept either a raw path string or one wrapped in d="..."
+    const match = text.match(/d=["']([^"']+)["']/) || text.match(/d=["'](.+?)["']/s);
+    const raw = match ? match[1] : text.trim();
+    if (!raw.match(/^[MmCcLlSsQqTtAaZz]/)) {
+      alert('Clipboard does not look like an SVG path.\nCopy a path string (starting with M) or an element with d="..."');
+      return;
+    }
+    const s = sec(curCat);
+    pathHistory.push(s.pathD);
+    s.pathD = raw; s.pathPts = [];
+    save(); setRoad(raw); renderEntryDot();
+  }).catch(() => {
+    // Fallback: prompt
+    const raw = prompt('Paste SVG path (d="..." value or raw path string):');
+    if (!raw) return;
+    const match = raw.match(/d=["']([^"']+)["']/);
+    const path = match ? match[1] : raw.trim();
+    const s = sec(curCat);
+    pathHistory.push(s.pathD);
+    s.pathD = path; s.pathPts = [];
+    save(); setRoad(path); renderEntryDot();
   });
 }
 
