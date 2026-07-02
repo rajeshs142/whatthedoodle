@@ -653,12 +653,52 @@ function renderNodes() {
 // ─────────────────────────────────────────────────────────────────────────
 // DOODLE PICKER
 // ─────────────────────────────────────────────────────────────────────────
+
+// 200 common recognisable words to use as background doodles on the flat map
+const MAP_DOODLE_WORDS = new Set([
+  'airplane','apple','axe','backpack','banana','barn','baseball','basketball',
+  'bat','bathtub','bear','bed','bee','belt','bench','bicycle','bird',
+  'birthday cake','book','bowtie','brain','bread','bridge','broccoli','broom',
+  'bucket','bulldozer','bus','butterfly','cactus','cake','calculator','camel',
+  'camera','campfire','candle','cannon','canoe','car','carrot','castle','cat',
+  'ceiling fan','cell phone','chair','church','circle','clock','cloud',
+  'coffee cup','compass','computer','cookie','couch','cow','crab','crayon',
+  'crocodile','crown','cruise ship','cup','diamond','dog','dolphin','donut',
+  'door','dragon','dresser','drill','drums','duck','dumbbell','elephant',
+  'envelope','eye','eyeglasses','fan','feather','fence','fire hydrant',
+  'fireplace','firetruck','fish','flamingo','flashlight','flower',
+  'flying saucer','fork','frog','frying pan','giraffe','guitar','hamburger',
+  'hammer','hand','hat','headphones','helicopter','helmet','hexagon',
+  'horse','hospital','hot air balloon','hot dog','hourglass','house',
+  'house plant','ice cream','jacket','kangaroo','key','keyboard','knife',
+  'ladder','lantern','laptop','leaf','light bulb','lighthouse','lightning',
+  'lion','lobster','lollipop','mailbox','map','marker','megaphone','mermaid',
+  'microphone','microwave','monkey','moon','motorbike','mountain','mouse',
+  'mug','mushroom','nail','necklace','ocean','octopus','onion','oven','owl',
+  'paintbrush','palm tree','panda','pants','parachute','parrot','pear',
+  'pencil','penguin','piano','pickup truck','picture frame','pig','pillow',
+  'pineapple','pizza','police car','popsicle','potato','rabbit','radio',
+  'rain','rainbow','rake','remote control','rhinoceros','river',
+  'roller coaster','sailboat','sandwich','saw','saxophone','school bus',
+  'scissors','scorpion','screwdriver','sea turtle','shark','sheep','shoe',
+  'shovel','sink','skateboard','skull','snail','snake','snowflake','snowman',
+  'soccer ball','sock','speedboat','spider','spoon','squirrel','star',
+  'steak','stop sign','stove','strawberry','streetlight','submarine',
+  'suitcase','sun','swan','sweater','swing set','sword','table','teapot',
+  'teddy-bear','telephone','television','tennis racquet','tent','tiger',
+  'toaster','toilet','tooth','toothbrush','tornado','tractor','traffic light',
+  'train','tree','triangle','truck','t-shirt','umbrella','van','vase',
+  'violin','watermelon','whale','windmill','wine glass','zebra',
+]);
+
 function buildDoodleGrid() {
   const grid   = document.getElementById('doodle-grid');
   const noEl   = document.getElementById('no-doodles');
   grid.innerHTML = '';
   if (typeof DRAWINGS === 'undefined') { noEl.style.display=''; return; }
-  const pool = DRAWINGS.filter(d => d.category === curCat);
+  const pool = curCat === FLAT_MAP_CAT
+    ? DRAWINGS.filter(d => MAP_DOODLE_WORDS.has(d.word)).sort((a,b) => a.word.localeCompare(b.word))
+    : DRAWINGS.filter(d => d.category === curCat);
   noEl.style.display = pool.length ? 'none' : '';
   pool.forEach(d => {
     const paths = d.strokes.map(s =>
