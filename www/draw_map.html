@@ -234,6 +234,7 @@ body {
   <div class="pane">
     <div class="pane-title">Actions</div>
     <button class="act-btn ok" onclick="autoGeneratePath()">⚡ Auto Path + Nodes</button>
+    <button class="act-btn ok" onclick="autoPlaceDoodles()">🎨 Auto Place Doodles</button>
     <button class="act-btn" onclick="doUndo()">⟵ Undo Path</button>
     <button class="act-btn" onclick="clearNodes()">Clear Nodes</button>
     <button class="act-btn" onclick="clearSection()">Clear Section</button>
@@ -983,6 +984,44 @@ document.getElementById('bar-path-color').addEventListener('input', function() {
 // ─────────────────────────────────────────────────────────────────────────
 // ACTIONS
 // ─────────────────────────────────────────────────────────────────────────
+function autoPlaceDoodles() {
+  const s = sec(curCat);
+  if (!s.nodes.length) { alert('Generate nodes first (Auto Path + Nodes)'); return; }
+
+  // Pool of doodles to pick from
+  const pool = curCat === FLAT_MAP_CAT
+    ? DRAWINGS.filter(d => MAP_DOODLE_WORDS.has(d.word))
+    : DRAWINGS.filter(d => d.category === curCat);
+  if (!pool.length) { alert('No doodles available for this section'); return; }
+
+  // Seeded RNG so result is reproducible
+  let seed = curCat.split('').reduce((a, c) => a + c.charCodeAt(0), 99);
+  const rnd = () => {
+    seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
+    return (seed >>> 0) / 4294967296;
+  };
+  const rndRange = (lo, hi) => lo + rnd() * (hi - lo);
+
+  s.doodles = s.nodes.map((n, i) => {
+    const d    = pool[i % pool.length];
+    const offX = Math.round(rndRange(-55, 55));
+    const offY = Math.round(rndRange(-55, 55));
+    const size = Math.round(rndRange(38, 65));
+    const rot  = Math.round(rndRange(-30, 30));
+    const opq  = Math.round(rndRange(18, 35));
+    return {
+      id: d.id,
+      x: Math.max(10, Math.min(REF_W - 10, n.x + offX)),
+      y: Math.max(10, Math.min(s.height - 10, n.y + offY)),
+      rot, size, strokeW: 4, opq,
+      color: _DOODLE_PALETTE[Math.floor(rnd() * _DOODLE_PALETTE.length)],
+    };
+  });
+
+  save(); renderDoodles();
+  alert(`✓ Placed ${s.doodles.length} doodles`);
+}
+
 function doUndo() {
   if (!pathHistory.length) return;
   const s = sec(curCat);
@@ -995,22 +1034,7 @@ function clearSection(){ sections[curCat]=defSec(curCat); pathHistory=[]; save()
 function autoGeneratePath() {
   const s = sec(curCat);
   const H = s.height, W = REF_W;
-  const MARGIN = 28;
-
-  // Find start X from previous category's path end point
-  let startX = Math.round(W / 2);
-  const catIdx = WORLD_ORDER.indexOf(curCat);
-  if (catIdx > 0) {
-    const prevSec = sec(WORLD_ORDER[catIdx - 1]);
-    if (prevSec.pathD) {
-      const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      tmp.setAttribute('d', prevSec.pathD);
-      mapSvg.appendChild(tmp);
-      const ep = tmp.getPointAtLength(tmp.getTotalLength());
-      tmp.remove();
-      startX = Math.round(Math.max(MARGIN, Math.min(W - MARGIN, ep.x)));
-    }
-  }
+  const MARGIN = 30;
 
   // Seeded RNG from category name for reproducible shapes
   let seed = curCat.split('').reduce((a, c) => a + c.charCodeAt(0), 7);
@@ -1018,24 +1042,52 @@ function autoGeneratePath() {
     seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
     return (seed >>> 0) / 4294967296;
   };
+  const rndRange = (lo, hi) => Math.round(lo + rnd() * (hi - lo));
 
-  // Build snake: first point locked to startX at bottom, then alternate zones
-  const numPts = Math.max(6, Math.round(H / 65));
-  const zones  = [[MARGIN, W * 0.38], [W * 0.62, W - MARGIN]];
-  // pick zone for second point based on startX position
-  let zone = startX < W / 2 ? 1 : 0;
-  const pts = [{ x: startX, y: H - 14 }]; // match entry dot Y
+  // Build a loopy path: full-width sweeps with loop-backs and spirals
+  // Each "segment" is a sweep from one side to the other with varying Y step
+  const pts = [];
+  let y = H - 14;
+  let side = rnd() > 0.5 ? 0 : 1; // 0=left, 1=right
+  const sweepH = Math.max(60, Math.round(H / 14)); // vertical step per sweep
 
-  for (let i = 1; i < numPts; i++) {
-    const t  = i / (numPts - 1);
-    const y  = Math.round(H - 14 - t * (H - MARGIN * 2));
-    const [lo, hi] = zones[zone];
-    const x  = Math.round(lo + rnd() * (hi - lo));
-    pts.push({ x, y });
-    zone = 1 - zone;
+  pts.push({ x: rndRange(MARGIN, W - MARGIN), y });
+
+  while (y > MARGIN + sweepH) {
+    const nextY = Math.max(MARGIN, y - rndRange(sweepH * 0.6, sweepH * 1.4));
+    const midY  = Math.round((y + nextY) / 2);
+
+    if (side === 0) {
+      // sweep left→right with a loop bulge on the left
+      const loopX = rndRange(MARGIN, MARGIN + 60);
+      pts.push({ x: loopX,                    y: Math.round(y   - sweepH * 0.15) });
+      pts.push({ x: rndRange(MARGIN, MARGIN + 40), y: midY });
+      pts.push({ x: rndRange(W * 0.55, W - MARGIN), y: nextY });
+    } else {
+      // sweep right→left with a loop bulge on the right
+      const loopX = rndRange(W - MARGIN - 60, W - MARGIN);
+      pts.push({ x: loopX,                         y: Math.round(y   - sweepH * 0.15) });
+      pts.push({ x: rndRange(W - MARGIN - 40, W - MARGIN), y: midY });
+      pts.push({ x: rndRange(MARGIN, W * 0.45),    y: nextY });
+    }
+
+    // Occasionally add a spiral loop: double back and cross over
+    if (rnd() < 0.35 && nextY > MARGIN + sweepH * 2) {
+      const loopTopY = Math.round(nextY - sweepH * 0.5);
+      const cx = side === 0
+        ? rndRange(W * 0.5, W - MARGIN)
+        : rndRange(MARGIN, W * 0.5);
+      pts.push({ x: cx,                        y: loopTopY });
+      pts.push({ x: rndRange(MARGIN + 20, W - MARGIN - 20), y: Math.round(nextY - sweepH * 0.2) });
+    }
+
+    y = nextY;
+    side = 1 - side;
   }
 
-  const d = catmullToD(pts, 3); // tension=3 → more curvy
+  pts.push({ x: rndRange(MARGIN, W - MARGIN), y: MARGIN });
+
+  const d = catmullToD(pts, 2); // tension=2 → very curvy
   pathHistory.push(s.pathD);
   s.pathD = d; s.pathPts = pts;
   save(); setRoad(d); renderEntryDot();
