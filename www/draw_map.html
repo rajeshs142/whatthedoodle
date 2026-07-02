@@ -1002,19 +1002,34 @@ function autoPlaceDoodles() {
   };
   const rndRange = (lo, hi) => lo + rnd() * (hi - lo);
 
+  // Shuffle pool so we don't just cycle in word-order
+  const shuffled = pool.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  // Vivid varied colors — not just palette pastels
+  const COLORS = [
+    '#ff6b6b','#ff9f43','#ffd32a','#0be881','#67e8f9',
+    '#a29bfe','#fd79a8','#fdcb6e','#55efc4','#74b9ff',
+    '#e17055','#00cec9','#6c5ce7','#fab1a0','#81ecec',
+    '#ffffff','#dfe6e9','#b2bec3','#f8c8d4','#c7ecee',
+  ];
+
   s.doodles = s.nodes.map((n, i) => {
-    const d    = pool[i % pool.length];
-    const offX = Math.round(rndRange(-55, 55));
-    const offY = Math.round(rndRange(-55, 55));
-    const size = Math.round(rndRange(38, 65));
-    const rot  = Math.round(rndRange(-30, 30));
-    const opq  = Math.round(rndRange(18, 35));
+    const d    = shuffled[i % shuffled.length];
+    const offX = Math.round(rndRange(-70, 70));
+    const offY = Math.round(rndRange(-70, 70));
+    const size = Math.round(rndRange(30, 90));  // wide range: tiny to large
+    const rot  = Math.round(rndRange(-45, 45));
+    const opq  = Math.round(rndRange(20, 55));  // some brighter, some faint
+    const color = COLORS[Math.floor(rnd() * COLORS.length)];
     return {
       id: d.id,
       x: Math.max(10, Math.min(REF_W - 10, n.x + offX)),
       y: Math.max(10, Math.min(s.height - 10, n.y + offY)),
-      rot, size, strokeW: 4, opq,
-      color: _DOODLE_PALETTE[Math.floor(rnd() * _DOODLE_PALETTE.length)],
+      rot, size, strokeW: Math.round(rndRange(3, 6)), opq, color,
     };
   });
 
@@ -1034,62 +1049,91 @@ function clearSection(){ sections[curCat]=defSec(curCat); pathHistory=[]; save()
 function autoGeneratePath() {
   const s = sec(curCat);
   const H = s.height, W = REF_W;
-  const MARGIN = 30;
+  const M = 22; // margin
 
-  // Seeded RNG from category name for reproducible shapes
   let seed = curCat.split('').reduce((a, c) => a + c.charCodeAt(0), 7);
   const rnd = () => {
     seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5;
     return (seed >>> 0) / 4294967296;
   };
-  const rndRange = (lo, hi) => Math.round(lo + rnd() * (hi - lo));
+  const ri  = (lo, hi) => Math.round(lo + rnd() * (hi - lo));
+  const rf  = (lo, hi) => lo + rnd() * (hi - lo);
 
-  // Build a loopy path: full-width sweeps with loop-backs and spirals
-  // Each "segment" is a sweep from one side to the other with varying Y step
-  const pts = [];
-  let y = H - 14;
-  let side = rnd() > 0.5 ? 0 : 1; // 0=left, 1=right
-  const sweepH = Math.max(60, Math.round(H / 14)); // vertical step per sweep
+  // Each shape fn takes (x0,y0,x1,y1) = from-point to end-point
+  // and returns a string of SVG cubic bezier commands (no leading M)
+  const L = W - M;  // right edge
+  const shapes = {
+    // S-curve: start one side, end the other, control points cross
+    S: (x0,y0,x1,y1) => {
+      const mx = (x0+x1)/2, my = (y0+y1)/2;
+      const bulge = rf(0.25,0.55) * (L - M);
+      const cx1 = x0 < mx ? M + bulge*0.1  : L - bulge*0.1;
+      const cx2 = x1 < mx ? M + bulge*0.1  : L - bulge*0.1;
+      return `C ${r(x0<mx?M+bulge*0.9:L-bulge*0.9)} ${r(y0+rf(10,30))}, ${r(cx2)} ${r(y1-rf(10,30))}, ${r(x1)} ${r(y1)}`;
+    },
+    // C-bend: arc to one side
+    C: (x0,y0,x1,y1) => {
+      const dir = rnd()>0.5 ? 1 : -1;
+      const pull = rf(0.55,0.9)*(L-M);
+      const cx = dir>0 ? Math.min(L, (x0+x1)/2+pull) : Math.max(M, (x0+x1)/2-pull);
+      const cy = (y0+y1)/2 + rf(-30,30);
+      return `C ${r(cx)} ${r(y0+rf(20,50))}, ${r(cx)} ${r(y1-rf(20,50))}, ${r(x1)} ${r(y1)}`;
+    },
+    // Z-zag: go opposite direction first then cross
+    Z: (x0,y0,x1,y1) => {
+      const goLeft = x1 > W/2;
+      const mid1x = goLeft ? ri(M, M+80)    : ri(L-80, L);
+      const mid2x = goLeft ? ri(L-80, L)    : ri(M, M+80);
+      const h3 = (y1-y0)/3;
+      return `C ${r(mid1x)} ${r(y0+h3*0.3)}, ${r(mid1x)} ${r(y0+h3)}, ${r((x0+mid2x)/2)} ${r(y0+h3*1.5)} S ${r(mid2x)} ${r(y1-h3*0.4)}, ${r(x1)} ${r(y1)}`;
+    },
+    // N-shape: up-across-up
+    N: (x0,y0,x1,y1) => {
+      const h = (y1-y0);
+      const peakX = x0 < W/2 ? ri(L-80,L) : ri(M,M+80);
+      return `C ${r(x0)} ${r(y0+h*0.15)}, ${r(peakX)} ${r(y0+h*0.25)}, ${r(peakX)} ${r(y0+h*0.5)} C ${r(peakX)} ${r(y0+h*0.75)}, ${r(x1)} ${r(y1-h*0.15)}, ${r(x1)} ${r(y1)}`;
+    },
+    // M-shape: two peaks
+    M: (x0,y0,x1,y1) => {
+      const h = (y1-y0);
+      const p1x = ri(M+20, W/2-20), p2x = ri(W/2+20, L-20);
+      const peakY = y0 + h*0.35 + rf(-20,20);
+      return `C ${r(x0)} ${r(y0+h*0.1)}, ${r(p1x)} ${r(y0+h*0.1)}, ${r(p1x)} ${r(peakY)} C ${r(p1x)} ${r(peakY+h*0.2)}, ${r(p2x)} ${r(peakY+h*0.1)}, ${r(p2x)} ${r(peakY)} C ${r(p2x)} ${r(peakY+h*0.25)}, ${r(x1)} ${r(y1-h*0.1)}, ${r(x1)} ${r(y1)}`;
+    },
+    // U-turn: go to edge, loop back
+    U: (x0,y0,x1,y1) => {
+      const goRight = rnd()>0.5;
+      const edgeX = goRight ? ri(L-30,L) : ri(M,M+30);
+      const h = (y1-y0);
+      return `C ${r(edgeX)} ${r(y0+h*0.1)}, ${r(edgeX)} ${r(y0+h*0.6)}, ${r((x0+x1)/2+rf(-40,40))} ${r(y0+h*0.65)} C ${r(goRight?M:L)} ${r(y0+h*0.7)}, ${r(x1+rf(-30,30))} ${r(y1-h*0.1)}, ${r(x1)} ${r(y1)}`;
+    },
+  };
 
-  pts.push({ x: rndRange(MARGIN, W - MARGIN), y });
+  const shapeKeys = Object.keys(shapes);
+  const r = Math.round;
 
-  while (y > MARGIN + sweepH) {
-    const nextY = Math.max(MARGIN, y - rndRange(sweepH * 0.6, sweepH * 1.4));
-    const midY  = Math.round((y + nextY) / 2);
+  // Build path bottom→top in segments
+  const segH = Math.max(200, Math.round(H / 8)); // height per segment
+  let segs = [];
+  let cx = ri(M+40, L-40);
+  let cy = H - M;
+  segs.push(`M ${cx} ${cy}`);
 
-    if (side === 0) {
-      // sweep left→right with a loop bulge on the left
-      const loopX = rndRange(MARGIN, MARGIN + 60);
-      pts.push({ x: loopX,                    y: Math.round(y   - sweepH * 0.15) });
-      pts.push({ x: rndRange(MARGIN, MARGIN + 40), y: midY });
-      pts.push({ x: rndRange(W * 0.55, W - MARGIN), y: nextY });
-    } else {
-      // sweep right→left with a loop bulge on the right
-      const loopX = rndRange(W - MARGIN - 60, W - MARGIN);
-      pts.push({ x: loopX,                         y: Math.round(y   - sweepH * 0.15) });
-      pts.push({ x: rndRange(W - MARGIN - 40, W - MARGIN), y: midY });
-      pts.push({ x: rndRange(MARGIN, W * 0.45),    y: nextY });
-    }
-
-    // Occasionally add a spiral loop: double back and cross over
-    if (rnd() < 0.35 && nextY > MARGIN + sweepH * 2) {
-      const loopTopY = Math.round(nextY - sweepH * 0.5);
-      const cx = side === 0
-        ? rndRange(W * 0.5, W - MARGIN)
-        : rndRange(MARGIN, W * 0.5);
-      pts.push({ x: cx,                        y: loopTopY });
-      pts.push({ x: rndRange(MARGIN + 20, W - MARGIN - 20), y: Math.round(nextY - sweepH * 0.2) });
-    }
-
-    y = nextY;
-    side = 1 - side;
+  while (cy > M + segH * 0.4) {
+    const nextH = ri(segH * 0.7, segH * 1.3);
+    const nextY = Math.max(M, cy - nextH);
+    // end x: alternate sides with some randomness so it doesn't repeat
+    const nextX = cy - nextY > 100
+      ? (cx < W/2 ? ri(W*0.52, L-M) : ri(M, W*0.48))
+      : ri(M+30, L-30);
+    const shape = shapeKeys[Math.floor(rnd() * shapeKeys.length)];
+    segs.push(shapes[shape](cx, cy, nextX, nextY));
+    cx = nextX; cy = nextY;
   }
 
-  pts.push({ x: rndRange(MARGIN, W - MARGIN), y: MARGIN });
-
-  const d = catmullToD(pts, 2); // tension=2 → very curvy
+  const d = segs.join(' ');
   pathHistory.push(s.pathD);
-  s.pathD = d; s.pathPts = pts;
+  s.pathD = d; s.pathPts = [];
   save(); setRoad(d); renderEntryDot();
 
   // Place nodes evenly spaced along the new path (200 for flat map, 12 for category)
