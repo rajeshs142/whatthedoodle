@@ -159,11 +159,17 @@
     </div>
     <div class="doodle-stroke-info" id="doodleStrokeInfo">8 STROKES REMAINING</div>
     <div class="page-footer">
-      <input type="text" id="doodle-word" placeholder="What did you draw?" maxlength="30"
-        oninput="clearDoodleError()"
-        style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;
-               background:var(--surface);color:var(--text);font-family:inherit;font-size:1rem;
-               font-weight:700;letter-spacing:1px;outline:none;box-sizing:border-box"/>
+      <div style="display:flex;gap:8px;width:100%">
+        <input type="text" id="doodle-word" placeholder="What did you draw?" maxlength="30"
+          oninput="clearDoodleError()"
+          style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;
+                 background:var(--surface);color:var(--text);font-family:inherit;font-size:1rem;
+                 font-weight:700;letter-spacing:1px;outline:none;box-sizing:border-box"/>
+        <button onclick="suggestDoodleWord()"
+          style="padding:0 14px;border:1.5px solid var(--border);border-radius:8px;
+                 background:var(--surface);color:var(--sub);font-size:1.2rem;cursor:pointer;
+                 flex-shrink:0" title="Suggest a word">🎲</button>
+      </div>
       <div id="doodleCreateError" class="doodle-create-error"></div>
       <div class="summary-btn-row">
         <button class="overlay-btn home" onclick="backFromCreate()">CANCEL</button>
@@ -290,7 +296,10 @@
     </div><!-- end page-content -->
     <div class="page-footer">
       <button class="overlay-btn primary" style="width:100%;max-width:340px;align-self:center" onclick="applyCfg()">APPLY</button>
-      <button class="overlay-btn secondary" style="width:100%;max-width:340px;align-self:center" onclick="showStatsPage('settings')">STATS</button>
+      <div style="display:flex;gap:8px;width:100%;max-width:340px;align-self:center">
+        <button class="overlay-btn secondary" style="flex:1" onclick="showStatsPage('settings')">STATS</button>
+        <button class="overlay-btn secondary" style="flex:1" onclick="showArchivePage('settings')">ARCHIVE</button>
+      </div>
       <button class="overlay-btn home" onclick="settingsLeave()">HOME</button>
     </div>
   </div>

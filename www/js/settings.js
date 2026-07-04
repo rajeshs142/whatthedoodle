@@ -61,13 +61,43 @@ function updateSettingsPreview() {
 let _previewAnimGen = 0;
 function animateSettingsPreview() {
   const gen = ++_previewAnimGen;
-  const paths = [
-    document.getElementById('sp0'),
-    document.getElementById('sp1'),
-    document.getElementById('sp2'),
-  ];
+
+  // Pick a simple recognisable drawing to preview (cat, house, sun, star, fish…)
+  const PREVIEW_WORDS = ['cat','house','sun','star','fish','tree','car','flower','dog','bird'];
+  const frame = document.getElementById('settingsPreviewFrame');
+  let drawing = null;
+  for (const w of PREVIEW_WORDS) {
+    drawing = DRAWINGS.find(d => d.word === w);
+    if (drawing && drawing.strokes && drawing.strokes.length) break;
+  }
+  if (!drawing) drawing = DRAWINGS.find(d => d.strokes && d.strokes.length >= 1);
+  if (!drawing) return;
+
+  // Build SVG inside the frame
+  const strokeColor = 'var(--text)';
+  const strokeW = CONFIG.strokeWidth || 5;
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 255 255');
+  svg.style.cssText = 'width:100%;height:100%;';
+  const pathEls = drawing.strokes.map(d => {
+    const p = document.createElementNS(svgNS, 'path');
+    p.setAttribute('d', d);
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', strokeColor);
+    p.setAttribute('stroke-width', strokeW);
+    p.setAttribute('stroke-linecap', 'round');
+    p.setAttribute('stroke-linejoin', 'round');
+    return p;
+  });
+  pathEls.forEach(p => svg.appendChild(p));
+  frame.innerHTML = '';
+  frame.appendChild(svg);
+
+  const paths = pathEls;
   const mode = document.getElementById('cfg-strokeMode').value;
 
+  if (!paths.length) return;
   // measure lengths once
   const lengths = paths.map(p => p.getTotalLength());
 
@@ -84,10 +114,10 @@ function animateSettingsPreview() {
   const maxCycles = 2;
 
   function getOrder() {
-    if (mode === 'forward') return [0, 1, 2];
-    if (mode === 'reverse') return [2, 1, 0];
+    if (mode === 'forward') return [...paths.keys()];
+    if (mode === 'reverse') return [...paths.keys()].reverse();
     if (mode === 'random') {
-      const a = [0, 1, 2];
+      const a = [...paths.keys()];
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [a[i], a[j]] = [a[j], a[i]];

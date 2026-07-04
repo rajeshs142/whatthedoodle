@@ -109,8 +109,8 @@ function _getPathCfg(style, color) {
       { stroke:'none',                    width:0,  dash:null },
     ],
     dash:  [
-      { stroke:'rgba(0,0,0,0.5)',         width:10, dash:'20 18' },
-      { stroke:c,                          width:8,  dash:'20 18' },
+      { stroke:'rgba(0,0,0,0.4)',         width:6,  dash:'20 18' },
+      { stroke:c,                          width:4,  dash:'20 18' },
       { stroke:'none',                    width:0,  dash:null },
     ],
     pipe:  [
@@ -250,17 +250,35 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
           `overflow:visible;pointer-events:none;z-index:0;` +
           (!unlocked ? 'opacity:1;' : '');
         dsvg.setAttribute('viewBox', `0 0 ${_W} ${H}`);
+        // For the flat map, compute the current node's normalized Y progress (0=top,1=bottom)
+        let progressY = null;
+        if (m.sec.category === 'map' && m.ms.nodes && m.ms.nodes.length) {
+          const curNode = m.ms.nodes[Math.min(currentMapNodeIdx, m.ms.nodes.length - 1)];
+          if (curNode) progressY = curNode.y; // normalized 0–1
+        }
+
         m.ms.doodles.forEach((dd, di) => {
           const drw = DRAWINGS.find(d => d.id === dd.id);
           if (!drw || !drw.strokes || !drw.strokes.length) return;
-          const stroke = dd.color || '#fff';
+          const stroke = _lightThemes.has(CONFIG.theme) ? '#222222' : '#ffffff';
+          const sc = (dd.size || 70) / 255;
           const paths = drw.strokes.map(str =>
             `<path d="${str}" fill="none" stroke="${stroke}" stroke-width="${dd.strokeW || 5}" stroke-linecap="round" stroke-linejoin="round"/>`
           ).join('');
-          const sc = (dd.size || 70) / 255;
           const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
           g.setAttribute('class', 'map-doodle');
-          g.setAttribute('opacity', (dd.opq || 12) / 100);
+
+          let opacity;
+          if (progressY !== null) {
+            // Doodle Y on map: dd.y is normalized within section (0=top, 1=bottom)
+            // Progress flows top-to-bottom so doodles BELOW (higher Y) the current node are "behind" (played)
+            const DIM = 0.35, LIT = 0.75;
+            // path starts at bottom (y≈1) and goes up (y→0), so higher Y = already played
+            opacity = dd.y >= progressY ? LIT : DIM;
+          } else {
+            opacity = Math.min(dd.opq || 12, 20) / 100;
+          }
+          g.setAttribute('opacity', opacity.toFixed(3));
           g.setAttribute('transform',
             `translate(${dd.x * _W},${dd.y * H}) rotate(${dd.rot || 0}) scale(${sc}) translate(-127.5,-127.5)`);
           g.innerHTML = paths;
@@ -288,19 +306,29 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
         psvg.style.cssText = `position:absolute;top:${topY}px;left:${offsetX}px;width:${_W}px;height:${H}px;` +
           `overflow:visible;pointer-events:none;z-index:1;`;
         psvg.setAttribute('viewBox', `0 0 ${_W} ${H}`);
+        psvg.innerHTML = `<defs>
+          <filter id="path-glow-${sIdx}" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>`;
+        // Split into individual subpaths so dasharray resets correctly per stroke
+        const subpaths = d.match(/M[^M]*/g) || [d];
         const layerNames = ['shadow', 'base', 'detail'];
         cfg.forEach((layer, li) => {
           if (layer.stroke === 'none' || !layer.width) return;
-          const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          p.setAttribute('class', `map-path-layer map-path-layer--${layerNames[li] || li}`);
-          p.setAttribute('d', d);
-          p.setAttribute('fill', 'none');
-          p.setAttribute('stroke', layer.stroke);
-          p.setAttribute('stroke-width', String(layer.width));
-          p.setAttribute('stroke-linecap', 'round');
-          p.setAttribute('stroke-linejoin', 'round');
-          if (layer.dash) p.setAttribute('stroke-dasharray', layer.dash);
-          psvg.appendChild(p);
+          subpaths.forEach(sub => {
+            const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            p.setAttribute('class', `map-path-layer map-path-layer--${layerNames[li] || li}`);
+            p.setAttribute('d', sub);
+            p.setAttribute('fill', 'none');
+            p.setAttribute('stroke', layer.stroke);
+            p.setAttribute('stroke-width', String(layer.width));
+            p.setAttribute('stroke-linecap', 'round');
+            p.setAttribute('stroke-linejoin', 'round');
+            if (layer.dash) p.setAttribute('stroke-dasharray', layer.dash);
+            psvg.appendChild(p);
+          });
         });
         pathEl.appendChild(psvg);
 
@@ -314,24 +342,40 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
             else break;
           }
           if (completedCount > 0) {
-            const baseP = psvg.querySelector('path');
-            const totalLen = baseP ? baseP.getTotalLength() : 0;
+            // Measure total length across all subpaths
+            const tmpPaths = subpaths.map(sub => {
+              const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              p.setAttribute('d', sub);
+              document.body.appendChild(p);
+              return p;
+            });
+            const subLengths = tmpPaths.map(p => p.getTotalLength());
+            tmpPaths.forEach(p => p.remove());
+            const totalLen = subLengths.reduce((a, b) => a + b, 0);
             if (totalLen > 0) {
-              const fraction  = completedCount / totalNodes;
-              const doneLen   = (fraction * totalLen).toFixed(1);
-              const bigGap    = (totalLen * 3).toFixed(1);
-              const mkCP = (stroke, width, cls) => {
-                const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                p.setAttribute('class', `map-path-layer map-path-layer--${cls}`);
-                p.setAttribute('d', d); p.setAttribute('fill', 'none');
-                p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', String(width));
-                p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
-                p.setAttribute('stroke-dasharray', `${doneLen} ${bigGap}`);
-                return p;
-              };
-              const pathColor = THEME_PATH_COLORS[CONFIG.theme] || '#b75a0a' || '#ffffff';
-              psvg.appendChild(mkCP('rgba(0,0,0,0.5)', 12, 'complete-shadow'));
-              psvg.appendChild(mkCP(pathColor, 8, 'complete-fill'));
+              const fraction = completedCount / totalNodes;
+              let remaining = fraction * totalLen;
+              const borderColor = THEME_PATH_COLORS[CONFIG.theme] || '#b75a0a';
+              subpaths.forEach((sub, si) => {
+                const subLen = subLengths[si];
+                const doneLen = Math.min(remaining, subLen);
+                remaining -= doneLen;
+                if (doneLen <= 0) return;
+                const bigGap = (subLen * 3).toFixed(1);
+                const mkCP = (stroke, width, cls, glow) => {
+                  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                  p.setAttribute('class', `map-path-layer map-path-layer--${cls}`);
+                  p.setAttribute('d', sub); p.setAttribute('fill', 'none');
+                  p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', String(width));
+                  p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+                  p.setAttribute('stroke-dasharray', `${doneLen.toFixed(1)} ${bigGap}`);
+                  if (glow) p.setAttribute('filter', `url(#path-glow-${sIdx})`);
+                  return p;
+                };
+                psvg.appendChild(mkCP('rgba(255,255,255,0.3)', 10, 'complete-glow', true));
+                psvg.appendChild(mkCP(borderColor, 7, 'complete-border', false));
+                psvg.appendChild(mkCP('#ffffff', 2, 'complete-fill', false));
+              });
             }
           }
         }
@@ -711,5 +755,10 @@ function showStatsPage(returnPage) {
       <button class="hist-reset-btn" onclick="resetAllData()">RESET ALL DATA</button>
     </div>`;
 
-  showPage('stats');
+  const alreadyOnStats = document.getElementById('page-stats').classList.contains('active');
+  if (alreadyOnStats) {
+    PAGES.forEach(p => document.getElementById('page-' + p).classList.toggle('active', p === 'stats'));
+  } else {
+    showPage('stats');
+  }
 }

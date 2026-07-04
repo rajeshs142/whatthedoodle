@@ -236,9 +236,11 @@ body {
     <button class="act-btn ok" onclick="autoGeneratePath()">⚡ Auto Path</button>
     <button class="act-btn ok" onclick="autoGenNodes()">⬤ Auto Nodes</button>
     <button class="act-btn ok" onclick="importPath()">⬆ Import Path</button>
+    <button class="act-btn ok" onclick="reversePath()">⇄ Reverse Path</button>
     <button class="act-btn ok" onclick="autoPlaceDoodles()">🎨 Auto Place Doodles</button>
     <button class="act-btn" onclick="doUndo()">⟵ Undo Path</button>
     <button class="act-btn" onclick="clearNodes()">Clear Nodes</button>
+    <button class="act-btn" onclick="clearDoodles()">Clear Doodles</button>
     <button class="act-btn" onclick="clearSection()">Clear Section</button>
     <button class="act-btn" onclick="showPreview()">👁 Preview Map</button>
     <button class="act-btn ok" onclick="doExport()">⬇ Export All Sections</button>
@@ -1045,8 +1047,27 @@ function doUndo() {
   s.pathD = pathHistory.pop();
   save(); setRoad(s.pathD);
 }
-function clearNodes()  { sec(curCat).nodes=[]; save(); renderNodes(); }
-function clearSection(){ sections[curCat]=defSec(curCat); pathHistory=[]; save(); renderSection(); buildDoodleGrid(); }
+function reversePath() {
+  const s = sec(curCat);
+  if (!s.pathD) return;
+  const roadEl = document.getElementById('road-body');
+  const total = roadEl ? roadEl.getTotalLength() : 0;
+  if (!total) return;
+  const N = 2000;
+  const pts = [];
+  for (let i = 0; i <= N; i++) {
+    const pt = roadEl.getPointAtLength((N - i) / N * total);
+    pts.push(`${pt.x.toFixed(1)},${pt.y.toFixed(1)}`);
+  }
+  const reversed = 'M ' + pts.join(' L ');
+  pathHistory.push(s.pathD);
+  s.pathD = reversed; s.pathPts = [];
+  save(); setRoad(reversed); renderEntryDot();
+}
+
+function clearNodes()   { sec(curCat).nodes=[]; save(); renderNodes(); }
+function clearDoodles() { sec(curCat).doodles=[]; save(); renderDoodles(); }
+function clearSection() { sections[curCat]=defSec(curCat); pathHistory=[]; save(); renderSection(); buildDoodleGrid(); }
 
 function autoGeneratePath() {
   const s = sec(curCat);
@@ -1156,30 +1177,55 @@ function autoGenNodes() {
 }
 
 function importPath() {
-  // Read SVG path d="..." or raw path string from clipboard
   navigator.clipboard.readText().then(text => {
-    // Accept either a raw path string or one wrapped in d="..."
-    const match = text.match(/d=["']([^"']+)["']/) || text.match(/d=["'](.+?)["']/s);
-    const raw = match ? match[1] : text.trim();
-    if (!raw.match(/^[MmCcLlSsQqTtAaZz]/)) {
-      alert('Clipboard does not look like an SVG path.\nCopy a path string (starting with M) or an element with d="..."');
-      return;
-    }
-    const s = sec(curCat);
-    pathHistory.push(s.pathD);
-    s.pathD = raw; s.pathPts = [];
-    save(); setRoad(raw); renderEntryDot();
+    applyImportedPath(text);
   }).catch(() => {
-    // Fallback: prompt
-    const raw = prompt('Paste SVG path (d="..." value or raw path string):');
-    if (!raw) return;
-    const match = raw.match(/d=["']([^"']+)["']/);
-    const path = match ? match[1] : raw.trim();
-    const s = sec(curCat);
-    pathHistory.push(s.pathD);
-    s.pathD = path; s.pathPts = [];
-    save(); setRoad(path); renderEntryDot();
+    const text = prompt('Paste SVG path or map_sections.js content:');
+    if (text) applyImportedPath(text);
   });
+}
+
+function applyImportedPath(text) {
+  // 1. Try to extract path: "..." from map_sections.js JS object notation
+  let raw = null;
+  const msMatch = text.match(/path\s*:\s*["'`]([^"'`]+)["'`]/s);
+  if (msMatch) raw = msMatch[1].trim();
+
+  // 2. Try d="..." attribute
+  if (!raw) {
+    const dMatch = text.match(/d=["']([^"']+)["']/s);
+    if (dMatch) raw = dMatch[1].trim();
+  }
+
+  // 3. Treat as raw path string
+  if (!raw) raw = text.trim();
+
+  if (!raw.match(/^[MmCcLlSsQqTtAaZz]/)) {
+    alert('Clipboard does not look like an SVG path.\nCopy a path string (starting with M), d="..." attribute, or map_sections.js content with path:"..."');
+    return;
+  }
+
+  // Detect normalized coords: if every number in the path is ≤ 1.5 it's likely 0-1 space
+  const nums = [...raw.matchAll(/[-\d.]+(?:\.\d+)?(?:[eE][+-]?\d+)?/g)].map(m => Math.abs(parseFloat(m[0])));
+  const isNormalized = nums.length > 0 && nums.every(v => v <= 1.5);
+
+  let finalPath = raw;
+  if (isNormalized) {
+    const H = sec(curCat).height || 10000;
+    let idx = 0;
+    finalPath = raw.replace(/([MmCcLlSsQqTtAaZz])|([- ]?[-\d.]+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g, (m, cmd, num) => {
+      if (cmd) { idx = 0; return cmd; }
+      const v = parseFloat(num);
+      const out = idx % 2 === 0 ? +(v * REF_W).toFixed(1) : +(v * H).toFixed(1);
+      idx++;
+      return (num[0] === ' ' ? ' ' : '') + out;
+    });
+  }
+
+  const s = sec(curCat);
+  pathHistory.push(s.pathD);
+  s.pathD = finalPath; s.pathPts = [];
+  save(); setRoad(finalPath); renderEntryDot();
 }
 
 // ─────────────────────────────────────────────────────────────────────────

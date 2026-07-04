@@ -272,6 +272,36 @@ function deleteDoodle(idx) {
   renderDoodleSlots();
 }
 
+// ── WORD SUGGEST ──────────────────────────────────────────────────────────
+let _scribbleWords = null;
+function _loadScribbleWords(cb) {
+  if (_scribbleWords) { cb(_scribbleWords); return; }
+  const urls = ['scribblio_word_list.txt', 'www/scribblio_word_list.txt'];
+  function tryNext(i) {
+    if (i >= urls.length) {
+      // Fallback: use game drawing words
+      _scribbleWords = (typeof DRAWINGS !== 'undefined' ? DRAWINGS.map(d => d.word) : ['cat','dog','house','car','tree']);
+      cb(_scribbleWords);
+      return;
+    }
+    fetch(urls[i])
+      .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+      .then(t => {
+        _scribbleWords = t.split(/[,\n]/).map(w => w.trim()).filter(Boolean);
+        cb(_scribbleWords);
+      })
+      .catch(() => tryNext(i + 1));
+  }
+  tryNext(0);
+}
+function suggestDoodleWord() {
+  _loadScribbleWords(words => {
+    const w = words[Math.floor(Math.random() * words.length)];
+    document.getElementById('doodle-word').value = w;
+    clearDoodleError();
+  });
+}
+
 // ── DOODLE CREATE ─────────────────────────────────────────────────────────
 function startNewDoodle() {
   doodleStrokes    = [];

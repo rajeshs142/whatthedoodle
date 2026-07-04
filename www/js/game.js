@@ -493,16 +493,21 @@ function resetAllData() {
     localStorage.removeItem('qg_best');
     localStorage.removeItem('qg_score');
     localStorage.removeItem('qg_progress');
+    localStorage.removeItem('qg_stars');
   } catch(e) {}
-  playingDay        = daysSinceStart();
-  playingSlot       = 0;
-  currentDrawingIdx = getDrawingIdx(playingDay, 0);
-  totalScore        = 0;
-  bestScore         = 0;
-  roundHistory      = [];
-  currentGuesses    = [];
+  playingDay         = daysSinceStart();
+  playingSlot        = 0;
+  currentDrawingIdx  = getDrawingIdx(playingDay, 0);
+  currentMapNodeIdx  = 0;
+  _mapSequence       = null;
+  totalScore         = 0;
+  bestScore          = 0;
+  roundHistory       = [];
+  currentGuesses     = [];
   sessionDayProgress = null;
   updateScoreDisplay();
-  closeAllModals();
-  loadDrawing();
+  // Clear stale map DOM so stars don't show on next visit, then stay on stats
+  const pathEl = document.getElementById('levelPath');
+  if (pathEl) pathEl.innerHTML = '';
+  setTimeout(() => showStatsPage(_statsReturnPage), 0);
 }

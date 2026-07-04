@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Draw Words — What the Doodle?</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #111; color: #eee; font-family: system-ui, sans-serif; overflow: hidden; }
+
+  #app { display: flex; flex-direction: column; height: 100%; max-width: 480px; margin: 0 auto; }
+
+  /* ── HEADER ── */
+  #header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid #2a2a2a; flex-shrink: 0;
+  }
+  #header h1 { font-size: 1rem; letter-spacing: 3px; color: #aaa; font-weight: 700; }
+  #progress-label { font-size: 0.75rem; color: #555; }
+
+  /* ── WORD DISPLAY ── */
+  #word-section {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 14px 16px 10px; flex-shrink: 0;
+  }
+  #current-word {
+    font-size: 1.8rem; font-weight: 800; letter-spacing: 2px;
+    color: #fff; text-align: center; flex: 1;
+    text-transform: uppercase;
+  }
+  #category-badge {
+    font-size: 0.65rem; color: #555; letter-spacing: 1px;
+    text-transform: uppercase; text-align: center; padding-bottom: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── CANVAS ── */
+  #canvas-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 8px; min-height: 0;
+  }
+  #drawCanvas {
+    background: #1a1a1a; border-radius: 12px; border: 2px solid #2a2a2a;
+    touch-action: none; cursor: crosshair; display: block;
+  }
+
+  /* ── STROKE TOOLS ── */
+  #stroke-tools {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 6px 14px; flex-shrink: 0;
+  }
+  .sw-btn {
+    padding: 5px 12px; border: 1.5px solid #333; border-radius: 6px;
+    background: #1a1a1a; color: #888; font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer; transition: all 0.1s;
+  }
+  .sw-btn:hover { background: #242424; color: #bbb; }
+  .sw-btn.active { background: #1a2a1a; border-color: #3a7a3a; color: #4c4; }
+  .sw-gap { flex: 1; }
+
+  /* ── STROKE COUNT ── */
+  #stroke-info {
+    text-align: center; font-size: 0.7rem; color: #444;
+    letter-spacing: 1px; padding: 2px 0 6px; flex-shrink: 0;
+  }
+
+  /* ── ACTION BUTTONS ── */
+  #actions {
+    display: flex; gap: 8px; padding: 8px 14px 14px; flex-shrink: 0;
+  }
+  .act-btn {
+    flex: 1; padding: 12px 8px; border-radius: 10px; font-size: 0.75rem;
+    font-weight: 700; letter-spacing: 1.5px; cursor: pointer;
+    border: 1.5px solid #2a2a2a; background: #1a1a1a; color: #888;
+    transition: all 0.15s;
+  }
+  .act-btn:hover { background: #222; color: #bbb; }
+  .act-btn.skip { border-color: #5a2a2a; color: #c66; }
+  .act-btn.skip:hover { background: #2a1a1a; }
+  .act-btn.save { border-color: #2a5a2a; color: #4c4; background: #162016; }
+  .act-btn.save:hover { background: #1a2a1a; }
+  .act-btn.save:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── SAVED PANEL ── */
+  #saved-panel {
+    display: none; flex-direction: column; height: 100%;
+  }
+  #saved-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-bottom: 1px solid #2a2a2a;
+  }
+  #saved-header h2 { font-size: 0.9rem; letter-spacing: 2px; color: #aaa; }
+  #saved-count { font-size: 0.75rem; color: #555; }
+  #saved-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
+  .saved-item {
+    width: calc(50% - 5px); background: #1a1a1a; border: 1.5px solid #2a2a2a;
+    border-radius: 10px; padding: 10px; position: relative;
+  }
+  .saved-item-word { font-size: 0.8rem; font-weight: 700; color: #ccc; letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; }
+  .saved-item svg { width: 100%; aspect-ratio: 1; display: block; }
+  .del-btn {
+    position: absolute; top: 6px; right: 6px; background: none; border: none;
+    color: #444; font-size: 1rem; cursor: pointer; line-height: 1;
+  }
+  .del-btn:hover { color: #c66; }
+  #saved-actions { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #2a2a2a; }
+  #saved-actions button {
+    flex: 1; padding: 11px; border-radius: 8px; font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 1.5px; cursor: pointer; border: 1.5px solid #333;
+    background: #1a1a1a; color: #888;
+  }
+  #saved-actions button.primary { border-color: #2a5a2a; color: #4c4; background: #162016; }
+  #saved-actions button:hover { background: #222; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: #222; border: 1px solid #333; border-radius: 8px;
+    padding: 8px 18px; font-size: 0.8rem; color: #aaa;
+    opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── JUMP INPUT ── */
+  #jump-wrap { display: flex; align-items: center; gap: 6px; padding: 0 14px 8px; flex-shrink: 0; }
+  #jump-input {
+    flex: 1; padding: 6px 10px; border: 1.5px solid #2a2a2a; border-radius: 6px;
+    background: #1a1a1a; color: #ccc; font-size: 0.8rem; outline: none;
+  }
+  #jump-input::placeholder { color: #444; }
+  #jump-btn {
+    padding: 6px 12px; border: 1.5px solid #2a2a2a; border-radius: 6px;
+    background: #1a1a1a; color: #777; font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer;
+  }
+  #jump-btn:hover { background: #222; color: #bbb; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- DRAW PANEL -->
+  <div id="draw-panel" style="display:flex;flex-direction:column;height:100%">
+    <div id="header">
+      <h1>DRAW WORDS</h1>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span id="progress-label">0 / 3692</span>
+        <button onclick="showSaved()" style="padding:4px 10px;border:1.5px solid #2a2a2a;border-radius:6px;background:#1a1a1a;color:#777;font-size:0.7rem;font-weight:700;letter-spacing:1px;cursor:pointer">SAVED</button>
+      </div>
+    </div>
+
+    <div id="word-section">
+      <div style="flex:1;text-align:center">
+        <div id="category-badge">—</div>
+        <div id="current-word">—</div>
+      </div>
+    </div>
+
+    <div id="jump-wrap">
+      <input id="jump-input" placeholder="Search or jump to word…" oninput="onJumpInput(this.value)" onkeydown="if(event.key==='Enter')jumpToWord()"/>
+      <button id="jump-btn" onclick="jumpToWord()">GO</button>
+    </div>
+
+    <div id="canvas-wrap">
+      <canvas id="drawCanvas"></canvas>
+    </div>
+
+    <div id="stroke-tools">
+      <button class="sw-btn active" data-sw="2" onclick="setSW(2)">THIN</button>
+      <button class="sw-btn" data-sw="4" onclick="setSW(4)">MED</button>
+      <button class="sw-btn" data-sw="7" onclick="setSW(7)">THICK</button>
+      <div class="sw-gap"></div>
+      <button class="sw-btn" onclick="undoStroke()">UNDO</button>
+      <button class="sw-btn" onclick="clearCanvas()">CLEAR</button>
+    </div>
+    <div id="stroke-info">0 STROKES</div>
+
+    <div id="actions">
+      <button class="act-btn skip" onclick="skipWord()">⏭ SKIP</button>
+      <button class="act-btn skip" onclick="prevWord()">⏮ BACK</button>
+      <button class="act-btn save" id="save-btn" onclick="saveDrawing()" disabled>💾 SAVE</button>
+    </div>
+  </div>
+
+  <!-- SAVED PANEL -->
+  <div id="saved-panel">
+    <div id="saved-header">
+      <h2>SAVED DRAWINGS</h2>
+      <span id="saved-count">0 saved</span>
+    </div>
+    <div id="saved-list"></div>
+    <div id="saved-actions">
+      <button onclick="hideSaved()">← BACK</button>
+      <button onclick="exportDrawings()" class="primary">⬇ EXPORT JS</button>
+      <button onclick="clearAllSaved()" style="border-color:#5a2a2a;color:#c66">🗑 CLEAR ALL</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── WORD LIST ──────────────────────────────────────────────────────────────
+let WORDS = [];
+let wordIdx = 0;
+let skipped = new Set();
+
+fetch('scribblio_word_list.txt')
+  .then(r => r.text())
+  .then(t => {
+    WORDS = t.split(/[,\n]/).map(w => w.trim()).filter(Boolean);
+    // Restore position from localStorage
+    wordIdx = parseInt(localStorage.getItem('dw_idx') || '0');
+    if (wordIdx >= WORDS.length) wordIdx = 0;
+    try { skipped = new Set(JSON.parse(localStorage.getItem('dw_skipped') || '[]')); } catch(e) {}
+    updateWord();
+    updateProgress();
+  });
+
+// ── CANVAS ────────────────────────────────────────────────────────────────
+let strokes = [];       // [{sw, pts:[{x,y}]}]
+let currentPts = [];
+let isDrawing = false;
+let sw = 2;
+const MAX_STROKES = 8;
+
+function initCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  const canvas = document.getElementById('drawCanvas');
+  const size = Math.min(wrap.clientWidth - 20, wrap.clientHeight - 20, 400);
+  canvas.width = canvas.height = Math.max(size, 120);
+  canvas.removeEventListener('pointerdown', onDown);
+  canvas.removeEventListener('pointermove', onMove);
+  canvas.removeEventListener('pointerup',   onUp);
+  canvas.removeEventListener('pointercancel', onUp);
+  canvas.addEventListener('pointerdown', onDown, { passive: false });
+  canvas.addEventListener('pointermove', onMove, { passive: false });
+  canvas.addEventListener('pointerup',   onUp,   { passive: false });
+  canvas.addEventListener('pointercancel', onUp, { passive: false });
+  redraw();
+}
+
+function getPos(e) {
+  const canvas = document.getElementById('drawCanvas');
+  const r = canvas.getBoundingClientRect();
+  const sx = canvas.width  / r.width;
+  const sy = canvas.height / r.height;
+  const src = e.touches ? e.touches[0] : e;
+  return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
+}
+
+function onDown(e) {
+  e.preventDefault();
+  if (strokes.length >= MAX_STROKES) { toast(`Max ${MAX_STROKES} strokes`); return; }
+  isDrawing = true;
+  currentPts = [getPos(e)];
+  document.getElementById('drawCanvas').setPointerCapture(e.pointerId);
+}
+function onMove(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  currentPts.push(getPos(e));
+  redraw();
+}
+function onUp(e) {
+  if (!isDrawing) return;
+  isDrawing = false;
+  if (currentPts.length > 1) {
+    strokes.push({ sw, pts: currentPts });
+    updateStrokeInfo();
+    document.getElementById('save-btn').disabled = strokes.length === 0;
+  }
+  currentPts = [];
+  redraw();
+}
+
+function redraw() {
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const color = '#ffffff';
+  const allStrokes = [...strokes, ...(currentPts.length > 1 ? [{ sw, pts: currentPts }] : [])];
+  for (const s of allStrokes) {
+    if (s.pts.length < 2) continue;
+    ctx.beginPath();
+    ctx.lineWidth = s.sw;
+    ctx.strokeStyle = color;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.moveTo(s.pts[0].x, s.pts[0].y);
+    for (let i = 1; i < s.pts.length; i++) ctx.lineTo(s.pts[i].x, s.pts[i].y);
+    ctx.stroke();
+  }
+}
+
+function setSW(v) {
+  sw = v;
+  document.querySelectorAll('.sw-btn[data-sw]').forEach(b =>
+    b.classList.toggle('active', parseInt(b.dataset.sw) === v));
+}
+
+function undoStroke() {
+  strokes.pop();
+  updateStrokeInfo();
+  document.getElementById('save-btn').disabled = strokes.length === 0;
+  redraw();
+}
+
+function clearCanvas() {
+  strokes = []; currentPts = []; isDrawing = false;
+  updateStrokeInfo();
+  document.getElementById('save-btn').disabled = true;
+  redraw();
+}
+
+function updateStrokeInfo() {
+  const rem = MAX_STROKES - strokes.length;
+  document.getElementById('stroke-info').textContent =
+    `${strokes.length} STROKE${strokes.length !== 1 ? 'S' : ''} · ${rem} REMAINING`;
+}
+
+// ── WORD NAVIGATION ───────────────────────────────────────────────────────
+function updateWord() {
+  if (!WORDS.length) return;
+  const word = WORDS[wordIdx];
+  document.getElementById('current-word').textContent = word;
+  document.getElementById('progress-label').textContent = `${wordIdx + 1} / ${WORDS.length}`;
+  // Guess category from word length as a rough hint
+  const badge = word.includes(' ') ? 'PHRASE' : word.length <= 3 ? 'SHORT' : '';
+  document.getElementById('category-badge').textContent = badge;
+  localStorage.setItem('dw_idx', wordIdx);
+}
+
+function updateProgress() {
+  document.getElementById('progress-label').textContent = `${wordIdx + 1} / ${WORDS.length}`;
+}
+
+function skipWord() {
+  skipped.add(wordIdx);
+  localStorage.setItem('dw_skipped', JSON.stringify([...skipped]));
+  clearCanvas();
+  wordIdx = (wordIdx + 1) % WORDS.length;
+  updateWord();
+}
+
+function prevWord() {
+  clearCanvas();
+  wordIdx = (wordIdx - 1 + WORDS.length) % WORDS.length;
+  updateWord();
+}
+
+function onJumpInput(val) {
+  // Highlight match but don't jump yet
+}
+
+function jumpToWord() {
+  const val = document.getElementById('jump-input').value.trim().toLowerCase();
+  if (!val) return;
+  // Try exact match first, then partial
+  let idx = WORDS.findIndex(w => w.toLowerCase() === val);
+  if (idx < 0) idx = WORDS.findIndex(w => w.toLowerCase().includes(val));
+  if (idx >= 0) {
+    wordIdx = idx;
+    clearCanvas();
+    updateWord();
+    document.getElementById('jump-input').value = '';
+    toast(`Jumped to "${WORDS[idx]}"`);
+  } else {
+    toast('Word not found');
+  }
+}
+
+// ── SAVE / EXPORT ─────────────────────────────────────────────────────────
+const SAVE_KEY = 'dw_saved';
+
+function loadSaved() {
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY) || '[]'); } catch(e) { return []; }
+}
+function writeSaved(arr) {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(arr));
+}
+
+function strokeToPath(pts, canvasSize) {
+  // Normalize to 0–255 space (same as game drawings)
+  const scale = 255 / canvasSize;
+  let d = `M ${(pts[0].x * scale).toFixed(1)} ${(pts[0].y * scale).toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++)
+    d += ` L ${(pts[i].x * scale).toFixed(1)} ${(pts[i].y * scale).toFixed(1)}`;
+  return d;
+}
+
+function saveDrawing() {
+  if (!strokes.length) return;
+  const word = WORDS[wordIdx];
+  const canvas = document.getElementById('drawCanvas');
+  const paths = strokes.map(s => strokeToPath(s.pts, canvas.width));
+  const saved = loadSaved();
+  // Replace if same word already saved
+  const existIdx = saved.findIndex(s => s.word.toLowerCase() === word.toLowerCase());
+  const entry = { word, strokes: paths, sw, savedAt: Date.now() };
+  if (existIdx >= 0) saved[existIdx] = entry;
+  else saved.push(entry);
+  writeSaved(saved);
+  toast(`Saved "${word}"!`);
+  clearCanvas();
+  wordIdx = (wordIdx + 1) % WORDS.length;
+  updateWord();
+}
+
+function exportDrawings() {
+  const saved = loadSaved();
+  if (!saved.length) { toast('Nothing saved yet'); return; }
+
+  // Format as game DRAWINGS array entries
+  const lines = saved.map((s, i) => {
+    const id = String(9000 + i).padStart(4, '0');
+    const strokesJson = JSON.stringify(s.strokes);
+    return `  { id:"${id}", word:"${s.word}", category:"misc", strokes:${strokesJson} }`;
+  });
+
+  const js = `// Custom drawings — paste into drawings.js\nconst CUSTOM_DRAWINGS = [\n${lines.join(',\n')}\n];\n`;
+
+  // Download as file
+  const blob = new Blob([js], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'custom_drawings.js';
+  a.click(); URL.revokeObjectURL(url);
+  toast(`Exported ${saved.length} drawings`);
+}
+
+function clearAllSaved() {
+  if (!confirm('Delete all saved drawings?')) return;
+  writeSaved([]);
+  renderSavedList();
+  toast('Cleared');
+}
+
+// ── SAVED PANEL ───────────────────────────────────────────────────────────
+function showSaved() {
+  document.getElementById('draw-panel').style.display = 'none';
+  document.getElementById('saved-panel').style.display = 'flex';
+  renderSavedList();
+}
+
+function hideSaved() {
+  document.getElementById('saved-panel').style.display = 'none';
+  document.getElementById('draw-panel').style.display = 'flex';
+}
+
+function renderSavedList() {
+  const saved = loadSaved();
+  document.getElementById('saved-count').textContent = `${saved.length} saved`;
+  const list = document.getElementById('saved-list');
+  if (!saved.length) {
+    list.innerHTML = '<div style="color:#444;font-size:0.8rem;padding:20px;width:100%;text-align:center">No drawings saved yet</div>';
+    return;
+  }
+  list.innerHTML = saved.map((s, i) => {
+    const paths = s.strokes.map(d =>
+      `<path d="${d}" fill="none" stroke="#fff" stroke-width="${s.sw || 3}" stroke-linecap="round" stroke-linejoin="round"/>`
+    ).join('');
+    return `<div class="saved-item">
+      <div class="saved-item-word">${s.word}</div>
+      <svg viewBox="0 0 255 255">${paths}</svg>
+      <button class="del-btn" onclick="deleteSaved(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteSaved(i) {
+  const saved = loadSaved();
+  saved.splice(i, 1);
+  writeSaved(saved);
+  renderSavedList();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  initCanvas();
+  window.addEventListener('resize', initCanvas);
+});
+</script>
+</body>
+</html>
