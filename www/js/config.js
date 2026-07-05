@@ -7,7 +7,7 @@ const CONFIG = {
   guessTime:       10,           // seconds to guess
 
   // ── THEME ─────────────────────────────────────────────────────────────────
-  theme:           'light',      // 'light' | 'dark' | 'sepia' | 'ocean' | 'forest'
+  theme:           'dark',       // 'light' | 'dark' | 'sepia' | 'ocean' | 'forest'
 
   // ── VISUALS ───────────────────────────────────────────────────────────────
   strokeWidth:     3,            // canvas + SVG stroke width in pixels
