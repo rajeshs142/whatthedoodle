@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Doodle Manager — What the Doodle?</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #111; color: #eee; font-family: system-ui, sans-serif; }
+
+/* ── HEADER ── */
+#header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid #222; position: sticky; top: 0;
+  background: #111; z-index: 10; gap: 10px; flex-wrap: wrap;
+}
+#header h1 { font-size: 0.85rem; letter-spacing: 3px; color: #aaa; font-weight: 700; white-space: nowrap; }
+#stats { font-size: 0.7rem; color: #555; letter-spacing: 1px; white-space: nowrap; }
+
+.hdr-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ── FILTER BAR ── */
+#filter-bar {
+  display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid #1a1a1a;
+  flex-wrap: wrap; align-items: center; position: sticky; top: 45px;
+  background: #111; z-index: 9;
+}
+.f-btn {
+  padding: 4px 11px; border: 1.5px solid #2a2a2a; border-radius: 5px;
+  background: #1a1a1a; color: #666; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 1px; cursor: pointer; white-space: nowrap;
+}
+.f-btn:hover { border-color: #555; color: #bbb; }
+.f-btn.active { background: #1e2d1e; border-color: #3a7a3a; color: #4c4; }
+.f-btn.active.cat { background: #1a1a2a; border-color: #5566cc; color: #99aaff; }
+
+#search-input {
+  flex: 1; min-width: 120px; padding: 4px 10px; border: 1.5px solid #2a2a2a;
+  border-radius: 5px; background: #1a1a1a; color: #ccc; font-size: 0.75rem;
+  outline: none;
+}
+#search-input::placeholder { color: #444; }
+#search-input:focus { border-color: #555; }
+
+/* ── CATEGORY TABS ── */
+#cat-tabs {
+  display: flex; gap: 6px; padding: 6px 14px 8px; border-bottom: 1px solid #1a1a1a;
+  overflow-x: auto; position: sticky; top: 88px; background: #111; z-index: 8;
+  scrollbar-width: none;
+}
+#cat-tabs::-webkit-scrollbar { display: none; }
+.cat-tab {
+  padding: 3px 10px; border: 1.5px solid #2a2a2a; border-radius: 4px;
+  background: transparent; color: #555; font-size: 0.65rem; font-weight: 700;
+  letter-spacing: 1px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+.cat-tab:hover { border-color: #444; color: #999; }
+.cat-tab.active { border-color: #5566cc; color: #99aaff; background: #1a1a2a; }
+
+/* ── GRID ── */
+#grid-wrap { padding: 10px 10px 60px; }
+
+.cat-section { margin-bottom: 20px; }
+.cat-label {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 2px; color: #444;
+  text-transform: uppercase; padding: 4px 4px 6px; border-bottom: 1px solid #1a1a1a;
+  margin-bottom: 8px;
+}
+.cat-label span { color: #555; font-weight: 400; margin-left: 6px; }
+
+.word-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+/* ── WORD CARD ── */
+.word-card {
+  border: 1.5px solid #222; border-radius: 8px; background: #161616;
+  overflow: hidden; cursor: pointer; transition: border-color 0.12s;
+  position: relative;
+}
+.word-card:hover { border-color: #3a3a3a; }
+.word-card.has-drawing { border-color: #2a4a2a; }
+.word-card.has-drawing:hover { border-color: #3a7a3a; }
+.word-card.is-drawn { border-color: #1e3a1e; }
+
+.card-word {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
+  color: #888; padding: 6px 8px 4px; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.word-card.has-drawing .card-word { color: #5a5; }
+.word-card.is-drawn .card-word { color: #334; }
+
+.card-canvas {
+  width: 100%; aspect-ratio: 1; display: block; background: #111;
+}
+
+/* empty slot */
+.card-empty {
+  width: 100%; aspect-ratio: 1; display: flex; align-items: center;
+  justify-content: center; color: #2a2a2a; font-size: 1.4rem;
+  background: #111; user-select: none;
+}
+.word-card.is-drawn .card-empty { color: #1e2e1e; font-size: 0.65rem; color: #2a4a2a; letter-spacing: 1px; }
+
+.card-actions {
+  display: flex; border-top: 1px solid #1e1e1e;
+}
+.ca-btn {
+  flex: 1; padding: 5px 4px; font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.5px; background: transparent; border: none;
+  color: #444; cursor: pointer; text-align: center;
+}
+.ca-btn:hover { background: #1e1e1e; color: #aaa; }
+.ca-btn.draw { color: #557; }
+.ca-btn.draw:hover { background: #1a1a2a; color: #99aaff; }
+.ca-btn.clear { color: #533; }
+.ca-btn.clear:hover { background: #1e1616; color: #c66; }
+.ca-btn + .ca-btn { border-left: 1px solid #1e1e1e; }
+
+/* ── EMPTY STATE ── */
+#empty-state {
+  display: none; padding: 60px 20px; text-align: center;
+  color: #333; font-size: 0.8rem; letter-spacing: 2px;
+}
+
+/* ── EXPORT BAR ── */
+#export-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; gap: 8px; padding: 10px 14px;
+  background: #111; border-top: 1px solid #222; z-index: 20;
+}
+.exp-btn {
+  flex: 1; padding: 10px; border-radius: 8px; font-size: 0.7rem;
+  font-weight: 700; letter-spacing: 1.5px; cursor: pointer;
+  border: 1.5px solid #2a2a2a; background: #1a1a1a; color: #666;
+}
+.exp-btn:hover { color: #aaa; border-color: #444; }
+.exp-btn.primary { border-color: #2a5a2a; color: #4c4; background: #162016; }
+.exp-btn.primary:hover { background: #1a2a1a; }
+.exp-btn.go-draw { border-color: #3344aa; color: #88aaff; background: #161622; }
+.exp-btn.go-draw:hover { background: #1a1a2a; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>DOODLE MANAGER</h1>
+  <div class="hdr-row">
+    <span id="stats">— / 1000</span>
+    <button class="exp-btn go-draw" style="flex:none;padding:4px 12px" onclick="openDrawWords()">✏ DRAW</button>
+    <button class="exp-btn primary" style="flex:none;padding:4px 12px" onclick="exportDrawings()">⬇ EXPORT</button>
+  </div>
+</div>
+
+<div id="filter-bar">
+  <button class="f-btn active" data-filter="all" onclick="setFilter('all',this)">ALL</button>
+  <button class="f-btn" data-filter="drawn" onclick="setFilter('drawn',this)">DRAWN</button>
+  <button class="f-btn" data-filter="saved" onclick="setFilter('saved',this)">SAVED</button>
+  <button class="f-btn" data-filter="todo" onclick="setFilter('todo',this)">TO DO</button>
+  <input id="search-input" type="text" placeholder="Search…" oninput="setSearch(this.value)">
+</div>
+
+<div id="cat-tabs"></div>
+
+<div id="grid-wrap">
+  <div id="grid"></div>
+  <div id="empty-state">NO WORDS MATCH</div>
+</div>
+
+<script>
+// ── CATALOGUE (same as draw_words.html) ───────────────────────────────────
+const CATALOGUE = [
+  { cat: 'Animals',     words: ['ant','bat','bear','bee','bird','butterfly','camel','cat','cow','crab','crocodile','dog','dolphin','duck','elephant','fish','flamingo','frog','giraffe','hedgehog','horse','kangaroo','lion','lobster','monkey','mosquito','mouse','octopus','owl','panda','parrot','penguin','pig','rabbit','raccoon','rhinoceros','scorpion','sea turtle','shark','sheep','snail','snake','spider','squirrel','swan','tiger','whale','zebra','deer','fox'] },
+  { cat: 'Food',        words: ['apple','asparagus','banana','birthday cake','blackberry','blueberry','bread','broccoli','cake','carrot','cookie','donut','grapes','hamburger','hot dog','ice cream','lollipop','mushroom','onion','peanut','pear','peas','pineapple','pizza','popsicle','potato','sandwich','steak','strawberry','string bean','watermelon','taco','sushi','cheese','egg','bacon','mango','popcorn','pretzel','waffle'] },
+  { cat: 'Nature',      words: ['animal migration','beach','bush','cactus','campfire','cloud','feather','flower','garden','grass','house plant','hurricane','leaf','lightning','moon','mountain','ocean','palm tree','pond','rain','rainbow','river','snowflake','snowman','sun','tornado','tree','volcano','waterfall','cave','desert','forest','island','lake','cliff','coral','seashell','wave','pebble','log'] },
+  { cat: 'Vehicles',    words: ['aircraft carrier','airplane','ambulance','bicycle','bulldozer','bus','canoe','car','cruise ship','firetruck','helicopter','hot air balloon','motorbike','parachute','pickup truck','police car','sailboat','school bus','speedboat','submarine','tractor','train','truck','van','wheel','rocket','scooter','rowboat','tank','cable car','trolley','jet ski','hang glider','ferry','golf cart','segway','kayak','snowmobile','forklift'] },
+  { cat: 'Household',   words: ['alarm clock','basket','bathtub','bed','bench','broom','bucket','camera','candle','ceiling fan','cell phone','chair','chandelier','clock','cooler','couch','dresser','fan','fireplace','floor lamp','headphones','hourglass','key','lantern','light bulb','lighter','mailbox','matches','picture frame','pillow','power outlet','radio','remote control','sink','sleeping bag','stereo','table','telephone','television','tent','toilet','toothbrush','toothpaste','umbrella','vase','washing machine','mirror','curtain','doorbell','rug'] },
+  { cat: 'Kitchen',     words: ['coffee cup','cup','dishwasher','fork','frying pan','knife','microwave','mug','oven','spoon','stove','teapot','toaster','wine bottle','wine glass','blender','cutting board','pot','colander','whisk','spatula','ladle','measuring cup','grater','rolling pin','apron','jar','bowl','plate','tray','bottle opener','can opener','kettle','thermos','chopsticks','mortar','wok','ice tray','lunch box','baking tray'] },
+  { cat: 'Clothing',    words: ['belt','bowtie','flip flops','hat','jacket','pants','shoe','shorts','sock','sweater','t-shirt','underwear','scarf','gloves','boots','dress','skirt','tie','cap','raincoat','swimsuit','hoodie','jeans','vest','bra','sandals','mittens','uniform','tuxedo','robe','nightgown','bandana','beret','cloak','leggings','overalls','poncho','tutu','wetsuit'] },
+  { cat: 'Sports',      words: ['baseball','baseball bat','basketball','boomerang','diving board','dumbbell','golf club','hockey puck','hockey stick','pool','rollerskates','see saw','skateboard','snorkel','soccer ball','swing set','tennis racquet','waterslide','yoga','surfboard','trophy','archery','boxing gloves','football','frisbee','goalpost','hurdle','javelin','medal','net','paddleball','ping pong','polo','rowing','rugby','skiing','stopwatch','wrestling','finish line','podium','whistle'] },
+  { cat: 'Tools',       words: ['anvil','axe','binoculars','compass','drill','flashlight','garden hose','hammer','ladder','nail','paintbrush','paint can','pliers','rake','saw','scissors','screwdriver','shovel','level','tape measure','wrench','chisel','clamp','crowbar','file','glue','magnifying glass','pulley','rope','stapler','bolt','nut','hook','chain','safety pin','wire','torch','wheelbarrow','tweezers'] },
+  { cat: 'Buildings',   words: ['barn','bridge','castle','church','door','fence','fire hydrant','hospital','house','jail','lighthouse','skyscraper','stairs','stop sign','streetlight','traffic light','windmill','igloo','pyramid','tower','arch','wall','gate','garage','shed','cabin','bungalow','hut','mosque','temple','stadium','theater','library','school','factory','greenhouse','treehouse','well','fountain','tent'] },
+  { cat: 'Body',        words: ['arm','beard','brain','ear','elbow','eye','face','finger','foot','goatee','hand','knee','leg','moustache','mouth','nose','skull','toe','tooth','heart','lung','spine','rib','hip','shoulder','chest','neck','wrist','ankle','eyelash','eyebrow','tongue','lip','cheek','forehead','chin','palm','thumb','heel','nail'] },
+  { cat: 'Office',      words: ['book','calculator','calendar','computer','crayon','envelope','eraser','keyboard','laptop','map','marker','paper clip','pencil','postcard','spreadsheet','stamp','stapler','tape','thumbtack','binder','clipboard','desk','drawer','folder','highlighter','notebook','pen','printer','ruler','sharpener','sticky note','typewriter','whiteboard','rubber band','letter','report','badge','cork board','inbox'] },
+  { cat: 'Music',       words: ['cello','clarinet','drums','guitar','harp','microphone','piano','saxophone','trombone','trumpet','violin','accordion','banjo','bass','bongo','flute','harmonica','lute','mandolin','oboe','organ','recorder','tambourine','ukulele','xylophone','bagpipe','cowbell','cymbal','didgeridoo','gong','kazoo','lyre','maracas','sitar','synthesizer','triangle','tuba','viola','zither','music note'] },
+  { cat: 'Accessories', words: ['backpack','bracelet','crown','eyeglasses','helmet','lipstick','necklace','purse','suitcase','ring','watch','earring','brooch','handbag','wallet','belt buckle','cufflinks','hairpin','locket','monocle','pendant','tiara','bow','button','clasp','clip','patch','ribbon','buckle','flask','keychain','mirror','parasol','pocket watch','sunglasses','tag','thimble','fan'] },
+  { cat: 'People',      words: ['baby','king','chef','doctor','pirate','astronaut','clown','knight','witch','wizard','nurse','firefighter','police officer','teacher','farmer','soldier','sailor','dancer','painter','sculptor','musician','actor','athlete','superhero','ninja','vampire','zombie','fairy','ghost','skeleton','bride','groom','judge','postman','cowboy','scientist','robot','monk','pope','pharaoh','president'] },
+  { cat: 'Weather',     words: ['rain','snow','lightning','rainbow','tornado','hurricane','cloud','sun','wind','hail','fog','frost','blizzard','thunderstorm','heatwave','drizzle','sleet','ice','puddle','mud','umbrella','snowdrift','avalanche','storm','sunshine','overcast','dust storm','dew','mist','breeze','gust','cyclone','monsoon','drought','flood','aurora','thunder','ice storm','weather vane','whirlpool'] },
+  { cat: 'Space',       words: ['rocket','planet','star','moon','alien','comet','astronaut','telescope','satellite','black hole','asteroid','nebula','galaxy','sun','meteor','space shuttle','mars','earth','jupiter','saturn','uranus','neptune','venus','mercury','pluto','orbit','crater','solar system','milky way','constellation','eclipse','gravity','space station','ufo','launching pad','spacewalk','solar panel','antenna','cosmonaut','stardust'] },
+  { cat: 'Ocean',       words: ['shark','whale','crab','jellyfish','coral','submarine','dolphin','octopus','sea turtle','lobster','starfish','seahorse','seal','walrus','clam','oyster','shrimp','squid','eel','manta ray','pufferfish','swordfish','tuna','sardine','anchor','lighthouse','wave','buoy','fishing rod','net','treasure chest','shipwreck','diving mask','fins','harpoon','pier','tide','seaweed','pearl','lifeboat'] },
+  { cat: 'Emotions',    words: ['smiley face','happy','sad','angry','surprised','sleepy','scared','confused','laughing','crying','bored','excited','love','heartbreak','worried','disgusted','proud','embarrassed','jealous','nervous','relaxed','frustrated','silly','thoughtful','wink','grin','frown','yawn','blush','shock','awe','dread','hope','joy','grief','rage','calm','envy','smirk','wonder'] },
+  { cat: 'Misc',        words: ['camouflage','cannon','megaphone','passport','rifle','roller coaster','sword','teddy-bear','bandage','stethoscope','stitches','syringe','angel','dragon','flying saucer','mermaid','circle','diamond','hexagon','square','star','triangle','zigzag','the eiffel tower','the great wall of china','the mona lisa','fireworks','flag','gift','balloon','cannonball','maze','spiral','clock','dice','domino','jigsaw','trophy','lanyard','bottlecap'] },
+];
+
+// Words already baked into drawings.js
+const ALREADY_DRAWN = new Set([
+  'aircraft carrier','airplane','ambulance','bicycle','bulldozer','bus','canoe','car','cruise ship','firetruck','helicopter','hot air balloon','motorbike','parachute','pickup truck','police car','sailboat','school bus','speedboat','submarine','tractor','train','truck','van','wheel',
+  'alarm clock','basket','bathtub','bed','bench','bottlecap','broom','bucket','camera','candle','ceiling fan','cell phone','chair','chandelier','clock','cooler','couch','dresser','fan','fireplace','floor lamp','headphones','hot tub','hourglass','key','lantern','light bulb','lighter','mailbox','matches','picture frame','pillow','power outlet','radio','remote control','sink','sleeping bag','stereo','table','telephone','television','tent','toilet','toothbrush','toothpaste','umbrella','vase','washing machine',
+  'angel','dragon','flying saucer','mermaid',
+  'animal migration','beach','bush','cactus','campfire','cloud','feather','flower','garden','grass','house plant','hurricane','leaf','lightning','moon','mountain','ocean','palm tree','pond','rain','rainbow','river','snowflake','snowman','sun','tornado','tree',
+  'ant','bat','bear','bee','bird','butterfly','camel','cat','cow','crab','crocodile','dog','dolphin','duck','elephant','fish','flamingo','frog','giraffe','hedgehog','horse','kangaroo','lion','lobster','monkey','mosquito','mouse','octopus','owl','panda','parrot','penguin','pig','rabbit','raccoon','rhinoceros','scorpion','sea turtle','shark','sheep','snail','snake','spider','squirrel','swan','tiger','whale','zebra',
+  'anvil','axe','binoculars','compass','drill','flashlight','garden hose','hammer','ladder','nail','paintbrush','paint can','pliers','rake','saw','scissors','screwdriver','shovel',
+  'apple','asparagus','banana','birthday cake','blackberry','blueberry','bread','broccoli','cake','carrot','cookie','donut','grapes','hamburger','hot dog','ice cream','lollipop','mushroom','onion','peanut','pear','peas','pineapple','pizza','popsicle','potato','sandwich','steak','strawberry','string bean','watermelon',
+  'arm','beard','brain','ear','elbow','eye','face','finger','foot','goatee','hand','knee','leg','moustache','mouth','nose','skull','toe','tooth',
+  'backpack','bracelet','crown','eyeglasses','helmet','lipstick','necklace','purse','suitcase',
+  'bandage','stethoscope','stitches','syringe',
+  'barn','bridge','castle','church','door','fence','fire hydrant','hospital','house','jail','lighthouse','skyscraper','stairs','stop sign','streetlight','traffic light','windmill',
+  'baseball','baseball bat','basketball','boomerang','diving board','dumbbell','golf club','hockey puck','hockey stick','pool','rollerskates','see saw','skateboard','snorkel','soccer ball','swing set','tennis racquet','waterslide','yoga',
+  'belt','bowtie','flip flops','hat','jacket','pants','shoe','shorts','sock','sweater','t-shirt','underwear',
+  'book','calculator','calendar','computer','crayon','envelope','eraser','keyboard','laptop','map','marker','paper clip','pencil','postcard','spreadsheet',
+  'camouflage','cannon','megaphone','passport','rifle','roller coaster','smiley face','sword','teddy-bear',
+  'cello','clarinet','drums','guitar','harp','microphone','piano','saxophone','trombone','trumpet','violin',
+  'circle','diamond','hexagon','line','octagon','square','squiggle','star','triangle','zigzag',
+  'coffee cup','cup','dishwasher','fork','frying pan','knife','microwave','mug','oven','spoon','stove','teapot','toaster','wine bottle','wine glass',
+  'the eiffel tower','the great wall of china','the mona lisa',
+]);
+
+const SAVE_KEY = 'dw_saved';
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let _filter = 'all';
+let _search = '';
+let _cat = 'ALL';
+
+// ── LOAD SAVED ────────────────────────────────────────────────────────────
+function loadSaved() {
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY) || '[]'); } catch(e) { return []; }
+}
+function writeSaved(arr) {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(arr));
+}
+function getSavedMap() {
+  const m = {};
+  loadSaved().forEach(s => { m[s.word.toLowerCase()] = s; });
+  return m;
+}
+
+// ── RENDER SVG ────────────────────────────────────────────────────────────
+function renderSVG(entry) {
+  if (!entry) return null;
+  const sw = entry.sw || 3;
+  const paths = entry.strokes.map(d =>
+    `<path d="${d}" fill="none" stroke="#fff" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`
+  ).join('');
+  return `<svg viewBox="0 0 255 255" style="width:100%;aspect-ratio:1;display:block;background:#111">${paths}</svg>`;
+}
+
+// ── DRAW ON CANVAS (for cards) ─────────────────────────────────────────────
+function renderCanvas(canvas, entry) {
+  const size = canvas.width;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+  if (!entry) return;
+  const scale = size / 255;
+  entry.strokes.forEach(d => {
+    const parts = d.trim().split(/\s+/);
+    ctx.beginPath();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = (entry.sw || 3) * scale;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    let i = 0;
+    while (i < parts.length) {
+      const cmd = parts[i++];
+      if (cmd === 'M' || cmd === 'L') {
+        // next token is "x,y" or separate x and y
+        let x, y;
+        const tok = parts[i++];
+        if (tok.includes(',')) { [x, y] = tok.split(',').map(Number); }
+        else { x = parseFloat(tok); y = parseFloat(parts[i++]); }
+        x *= scale; y *= scale;
+        if (cmd === 'M') ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+  });
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function render() {
+  const savedMap = getSavedMap();
+  const q = _search.toLowerCase().trim();
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  let totalVisible = 0;
+  let totalSaved = Object.keys(savedMap).length;
+  let totalDone = ALREADY_DRAWN.size;
+
+  CATALOGUE.forEach(({ cat, words }) => {
+    if (_cat !== 'ALL' && cat !== _cat) return;
+
+    const visible = words.filter(w => {
+      const saved = !!savedMap[w.toLowerCase()];
+      const drawn = ALREADY_DRAWN.has(w);
+      if (_filter === 'saved' && !saved) return false;
+      if (_filter === 'drawn' && !drawn) return false;
+      if (_filter === 'todo' && (saved || drawn)) return false;
+      if (q && !w.includes(q)) return false;
+      return true;
+    });
+    if (!visible.length) return;
+    totalVisible += visible.length;
+
+    const section = document.createElement('div');
+    section.className = 'cat-section';
+
+    const savedInCat = words.filter(w => savedMap[w.toLowerCase()]).length;
+    const drawnInCat = words.filter(w => ALREADY_DRAWN.has(w)).length;
+    section.innerHTML = `<div class="cat-label">${cat}<span>${savedInCat + drawnInCat} / ${words.length} done</span></div>`;
+
+    const wg = document.createElement('div');
+    wg.className = 'word-grid';
+
+    visible.forEach(word => {
+      const key = word.toLowerCase();
+      const saved = savedMap[key];
+      const drawn = ALREADY_DRAWN.has(word);
+
+      const card = document.createElement('div');
+      card.className = 'word-card' + (saved ? ' has-drawing' : drawn ? ' is-drawn' : '');
+
+      const wordDiv = document.createElement('div');
+      wordDiv.className = 'card-word';
+      wordDiv.textContent = word;
+      card.appendChild(wordDiv);
+
+      if (saved) {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'card-canvas';
+        canvas.width = 120;
+        canvas.height = 120;
+        card.appendChild(canvas);
+        requestAnimationFrame(() => renderCanvas(canvas, saved));
+      } else if (drawn) {
+        const empty = document.createElement('div');
+        empty.className = 'card-empty';
+        empty.textContent = 'IN GAME';
+        card.appendChild(empty);
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'card-empty';
+        empty.textContent = '+';
+        card.appendChild(empty);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'card-actions';
+
+      const drawBtn = document.createElement('button');
+      drawBtn.className = 'ca-btn draw';
+      drawBtn.textContent = saved ? 'REDRAW' : drawn ? 'OVERRIDE' : 'DRAW';
+      drawBtn.onclick = (e) => { e.stopPropagation(); goDrawWord(word); };
+
+      actions.appendChild(drawBtn);
+
+      if (saved) {
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'ca-btn clear';
+        clearBtn.textContent = 'CLEAR';
+        clearBtn.onclick = (e) => { e.stopPropagation(); clearWord(word); };
+        actions.appendChild(clearBtn);
+      }
+
+      card.appendChild(actions);
+      card.addEventListener('click', () => goDrawWord(word));
+      wg.appendChild(card);
+    });
+
+    section.appendChild(wg);
+    grid.appendChild(section);
+  });
+
+  document.getElementById('empty-state').style.display = totalVisible === 0 ? 'block' : 'none';
+
+  const todo = 1000 - totalSaved - totalDone;
+  document.getElementById('stats').textContent =
+    `${totalSaved} saved · ${totalDone} in-game · ${Math.max(0,todo)} to do`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+function goDrawWord(word) {
+  // Jump draw_words to this word via localStorage, then open it
+  const WORDS_FLAT = [];
+  CATALOGUE.forEach(({ cat, words }) => words.forEach(w => WORDS_FLAT.push(w)));
+  const idx = WORDS_FLAT.findIndex(w => w.toLowerCase() === word.toLowerCase());
+  if (idx >= 0) localStorage.setItem('dw_idx', idx);
+  window.open('draw_words.html', '_blank');
+}
+
+function clearWord(word) {
+  const saved = loadSaved();
+  const next = saved.filter(s => s.word.toLowerCase() !== word.toLowerCase());
+  writeSaved(next);
+  render();
+}
+
+function exportDrawings() {
+  const saved = loadSaved();
+  if (!saved.length) { alert('Nothing saved yet.'); return; }
+  const lines = saved.map((s, i) => {
+    const id = String(9000 + i).padStart(4, '0');
+    const category = (s.cat || 'misc').toLowerCase();
+    return `  { id:"${id}", word:"${s.word}", category:"${category}", strokes:${JSON.stringify(s.strokes)} }`;
+  });
+  const js = `// Custom drawings — paste into drawings.js\nconst CUSTOM_DRAWINGS = [\n${lines.join(',\n')}\n];\n`;
+  const blob = new Blob([js], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'custom_drawings.js'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function openDrawWords() {
+  window.open('draw_words.html', '_blank');
+}
+
+function setFilter(f, btn) {
+  _filter = f;
+  document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function setSearch(v) {
+  _search = v;
+  render();
+}
+
+function setCat(c) {
+  _cat = c;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === c));
+  render();
+}
+
+// ── CATEGORY TABS ──────────────────────────────────────────────────────────
+function buildCatTabs() {
+  const bar = document.getElementById('cat-tabs');
+  const all = document.createElement('button');
+  all.className = 'cat-tab active'; all.textContent = 'ALL'; all.dataset.cat = 'ALL';
+  all.onclick = () => setCat('ALL');
+  bar.appendChild(all);
+  CATALOGUE.forEach(({ cat }) => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab'; btn.textContent = cat.toUpperCase(); btn.dataset.cat = cat;
+    btn.onclick = () => setCat(cat);
+    bar.appendChild(btn);
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+buildCatTabs();
+render();
+
+// Refresh when localStorage changes (e.g. draw_words saved something)
+window.addEventListener('storage', e => { if (e.key === SAVE_KEY) render(); });
+</script>
+</body>
+</html>

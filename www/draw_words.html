@@ -144,8 +144,9 @@
     <div id="header">
       <h1>DRAW WORDS</h1>
       <div style="display:flex;gap:10px;align-items:center">
-        <span id="progress-label">0 / 3692</span>
+        <span id="progress-label">1 / 1000</span>
         <button onclick="showSaved()" style="padding:4px 10px;border:1.5px solid #2a2a2a;border-radius:6px;background:#1a1a1a;color:#777;font-size:0.7rem;font-weight:700;letter-spacing:1px;cursor:pointer">SAVED</button>
+        <a href="doodle_manager.html" target="_blank" style="padding:4px 10px;border:1.5px solid #2a2a2a;border-radius:6px;background:#1a1a1a;color:#777;font-size:0.7rem;font-weight:700;letter-spacing:1px;cursor:pointer;text-decoration:none">MANAGE</a>
       </div>
     </div>
 
@@ -200,22 +201,71 @@
 <div id="toast"></div>
 
 <script>
-// ── WORD LIST ──────────────────────────────────────────────────────────────
-let WORDS = [];
+// ── WORD CATALOGUE ─────────────────────────────────────────────────────────
+const CATALOGUE = [
+  { cat: 'Animals',     words: ['ant','bat','bear','bee','bird','butterfly','camel','cat','cow','crab','crocodile','dog','dolphin','duck','elephant','fish','flamingo','frog','giraffe','hedgehog','horse','kangaroo','lion','lobster','monkey','mosquito','mouse','octopus','owl','panda','parrot','penguin','pig','rabbit','raccoon','rhinoceros','scorpion','sea turtle','shark','sheep','snail','snake','spider','squirrel','swan','tiger','whale','zebra','deer','fox'] },
+  { cat: 'Food',        words: ['apple','asparagus','banana','birthday cake','blackberry','blueberry','bread','broccoli','cake','carrot','cookie','donut','grapes','hamburger','hot dog','ice cream','lollipop','mushroom','onion','peanut','pear','peas','pineapple','pizza','popsicle','potato','sandwich','steak','strawberry','string bean','watermelon','taco','sushi','cheese','egg','bacon','mango','popcorn','pretzel','waffle'] },
+  { cat: 'Nature',      words: ['animal migration','beach','bush','cactus','campfire','cloud','feather','flower','garden','grass','house plant','hurricane','leaf','lightning','moon','mountain','ocean','palm tree','pond','rain','rainbow','river','snowflake','snowman','sun','tornado','tree','volcano','waterfall','cave','desert','forest','island','lake','cliff','coral','seashell','wave','pebble','log'] },
+  { cat: 'Vehicles',    words: ['aircraft carrier','airplane','ambulance','bicycle','bulldozer','bus','canoe','car','cruise ship','firetruck','helicopter','hot air balloon','motorbike','parachute','pickup truck','police car','sailboat','school bus','speedboat','submarine','tractor','train','truck','van','wheel','rocket','scooter','rowboat','tank','cable car','trolley','jet ski','hang glider','ferry','golf cart','segway','kayak','snowmobile','forklift'] },
+  { cat: 'Household',   words: ['alarm clock','basket','bathtub','bed','bench','broom','bucket','camera','candle','ceiling fan','cell phone','chair','chandelier','clock','cooler','couch','dresser','fan','fireplace','floor lamp','headphones','hourglass','key','lantern','light bulb','lighter','mailbox','matches','picture frame','pillow','power outlet','radio','remote control','sink','sleeping bag','stereo','table','telephone','television','tent','toilet','toothbrush','toothpaste','umbrella','vase','washing machine','mirror','curtain','doorbell','rug'] },
+  { cat: 'Kitchen',     words: ['coffee cup','cup','dishwasher','fork','frying pan','knife','microwave','mug','oven','spoon','stove','teapot','toaster','wine bottle','wine glass','blender','cutting board','pot','colander','whisk','spatula','ladle','measuring cup','grater','rolling pin','apron','jar','bowl','plate','tray','bottle opener','can opener','kettle','thermos','chopsticks','mortar','wok','ice tray','lunch box','baking tray'] },
+  { cat: 'Clothing',    words: ['belt','bowtie','flip flops','hat','jacket','pants','shoe','shorts','sock','sweater','t-shirt','underwear','scarf','gloves','boots','dress','skirt','tie','cap','raincoat','swimsuit','hoodie','jeans','vest','bra','sandals','mittens','uniform','tuxedo','robe','nightgown','bandana','beret','cloak','leggings','overalls','poncho','tutu','wetsuit'] },
+  { cat: 'Sports',      words: ['baseball','baseball bat','basketball','boomerang','diving board','dumbbell','golf club','hockey puck','hockey stick','pool','rollerskates','see saw','skateboard','snorkel','soccer ball','swing set','tennis racquet','waterslide','yoga','surfboard','trophy','archery','boxing gloves','football','frisbee','goalpost','hurdle','javelin','medal','net','paddleball','ping pong','polo','rowing','rugby','skiing','stopwatch','wrestling','finish line','podium','whistle'] },
+  { cat: 'Tools',       words: ['anvil','axe','binoculars','compass','drill','flashlight','garden hose','hammer','ladder','nail','paintbrush','paint can','pliers','rake','saw','scissors','screwdriver','shovel','level','tape measure','wrench','chisel','clamp','crowbar','file','glue','magnifying glass','pulley','rope','stapler','bolt','nut','hook','chain','safety pin','wire','torch','wheelbarrow','tweezers'] },
+  { cat: 'Buildings',   words: ['barn','bridge','castle','church','door','fence','fire hydrant','hospital','house','jail','lighthouse','skyscraper','stairs','stop sign','streetlight','traffic light','windmill','igloo','pyramid','tower','arch','wall','gate','garage','shed','cabin','bungalow','hut','mosque','temple','stadium','theater','library','school','factory','greenhouse','treehouse','well','fountain','tent'] },
+  { cat: 'Body',        words: ['arm','beard','brain','ear','elbow','eye','face','finger','foot','goatee','hand','knee','leg','moustache','mouth','nose','skull','toe','tooth','heart','lung','spine','rib','hip','shoulder','chest','neck','wrist','ankle','eyelash','eyebrow','tongue','lip','cheek','forehead','chin','palm','thumb','heel','nail'] },
+  { cat: 'Office',      words: ['book','calculator','calendar','computer','crayon','envelope','eraser','keyboard','laptop','map','marker','paper clip','pencil','postcard','spreadsheet','stamp','stapler','tape','thumbtack','binder','clipboard','desk','drawer','folder','highlighter','notebook','pen','printer','ruler','sharpener','sticky note','typewriter','whiteboard','rubber band','letter','report','badge','cork board','inbox'] },
+  { cat: 'Music',       words: ['cello','clarinet','drums','guitar','harp','microphone','piano','saxophone','trombone','trumpet','violin','accordion','banjo','bass','bongo','flute','harmonica','lute','mandolin','oboe','organ','recorder','tambourine','ukulele','xylophone','bagpipe','cowbell','cymbal','didgeridoo','gong','kazoo','lyre','maracas','sitar','synthesizer','triangle','tuba','viola','zither','music note'] },
+  { cat: 'Accessories', words: ['backpack','bracelet','crown','eyeglasses','helmet','lipstick','necklace','purse','suitcase','ring','watch','earring','brooch','handbag','wallet','belt buckle','cufflinks','hairpin','locket','monocle','pendant','tiara','bow','button','clasp','clip','patch','ribbon','buckle','flask','keychain','mirror','parasol','pocket watch','sunglasses','tag','thimble','fan'] },
+  { cat: 'People',      words: ['baby','king','chef','doctor','pirate','astronaut','clown','knight','witch','wizard','nurse','firefighter','police officer','teacher','farmer','soldier','sailor','dancer','painter','sculptor','musician','actor','athlete','superhero','ninja','vampire','zombie','fairy','ghost','skeleton','bride','groom','judge','postman','cowboy','scientist','robot','monk','pope','pharaoh','president'] },
+  { cat: 'Weather',     words: ['rain','snow','lightning','rainbow','tornado','hurricane','cloud','sun','wind','hail','fog','frost','blizzard','thunderstorm','heatwave','drizzle','sleet','ice','puddle','mud','umbrella','snowdrift','avalanche','storm','sunshine','overcast','dust storm','dew','mist','breeze','gust','cyclone','monsoon','drought','flood','aurora','thunder','ice storm','weather vane','whirlpool'] },
+  { cat: 'Space',       words: ['rocket','planet','star','moon','alien','comet','astronaut','telescope','satellite','black hole','asteroid','nebula','galaxy','sun','meteor','space shuttle','mars','earth','jupiter','saturn','uranus','neptune','venus','mercury','pluto','orbit','crater','solar system','milky way','constellation','eclipse','gravity','space station','ufo','launching pad','spacewalk','solar panel','antenna','cosmonaut','stardust'] },
+  { cat: 'Ocean',       words: ['shark','whale','crab','jellyfish','coral','submarine','dolphin','octopus','sea turtle','lobster','starfish','seahorse','seal','walrus','clam','oyster','shrimp','squid','eel','manta ray','pufferfish','swordfish','tuna','sardine','anchor','lighthouse','wave','buoy','fishing rod','net','treasure chest','shipwreck','diving mask','fins','harpoon','pier','tide','seaweed','pearl','lifeboat'] },
+  { cat: 'Emotions',    words: ['smiley face','happy','sad','angry','surprised','sleepy','scared','confused','laughing','crying','bored','excited','love','heartbreak','worried','disgusted','proud','embarrassed','jealous','nervous','relaxed','frustrated','silly','thoughtful','wink','grin','frown','yawn','blush','shock','awe','dread','hope','joy','grief','rage','calm','envy','smirk','wonder'] },
+  { cat: 'Misc',        words: ['camouflage','cannon','megaphone','passport','rifle','roller coaster','sword','teddy-bear','bandage','stethoscope','stitches','syringe','angel','dragon','flying saucer','mermaid','circle','diamond','hexagon','square','star','triangle','zigzag','the eiffel tower','the great wall of china','the mona lisa','fireworks','flag','gift','balloon','cannonball','maze','spiral','clock','dice','domino','jigsaw','trophy','lanyard','bottlecap'] },
+];
+
+// Flat list with category info attached
+const WORDS_FLAT = [];
+CATALOGUE.forEach(({ cat, words }) => words.forEach(w => WORDS_FLAT.push({ word: w, cat })));
+
+// Words already drawn in the game
+const ALREADY_DRAWN = new Set([
+  'aircraft carrier','airplane','ambulance','bicycle','bulldozer','bus','canoe','car','cruise ship','firetruck','helicopter','hot air balloon','motorbike','parachute','pickup truck','police car','sailboat','school bus','speedboat','submarine','tractor','train','truck','van','wheel',
+  'alarm clock','basket','bathtub','bed','bench','bottlecap','broom','bucket','camera','candle','ceiling fan','cell phone','chair','chandelier','clock','cooler','couch','dresser','fan','fireplace','floor lamp','headphones','hot tub','hourglass','key','lantern','light bulb','lighter','mailbox','matches','picture frame','pillow','power outlet','radio','remote control','sink','sleeping bag','stereo','table','telephone','television','tent','toilet','toothbrush','toothpaste','umbrella','vase','washing machine',
+  'angel','dragon','flying saucer','mermaid',
+  'animal migration','beach','bush','cactus','campfire','cloud','feather','flower','garden','grass','house plant','hurricane','leaf','lightning','moon','mountain','ocean','palm tree','pond','rain','rainbow','river','snowflake','snowman','sun','tornado','tree',
+  'ant','bat','bear','bee','bird','butterfly','camel','cat','cow','crab','crocodile','dog','dolphin','duck','elephant','fish','flamingo','frog','giraffe','hedgehog','horse','kangaroo','lion','lobster','monkey','mosquito','mouse','octopus','owl','panda','parrot','penguin','pig','rabbit','raccoon','rhinoceros','scorpion','sea turtle','shark','sheep','snail','snake','spider','squirrel','swan','tiger','whale','zebra',
+  'anvil','axe','binoculars','compass','drill','flashlight','garden hose','hammer','ladder','nail','paintbrush','paint can','pliers','rake','saw','scissors','screwdriver','shovel',
+  'apple','asparagus','banana','birthday cake','blackberry','blueberry','bread','broccoli','cake','carrot','cookie','donut','grapes','hamburger','hot dog','ice cream','lollipop','mushroom','onion','peanut','pear','peas','pineapple','pizza','popsicle','potato','sandwich','steak','strawberry','string bean','watermelon',
+  'arm','beard','brain','ear','elbow','eye','face','finger','foot','goatee','hand','knee','leg','moustache','mouth','nose','skull','toe','tooth',
+  'backpack','bracelet','crown','eyeglasses','helmet','lipstick','necklace','purse','suitcase',
+  'bandage','stethoscope','stitches','syringe',
+  'barn','bridge','castle','church','door','fence','fire hydrant','hospital','house','jail','lighthouse','skyscraper','stairs','stop sign','streetlight','traffic light','windmill',
+  'baseball','baseball bat','basketball','boomerang','diving board','dumbbell','golf club','hockey puck','hockey stick','pool','rollerskates','see saw','skateboard','snorkel','soccer ball','swing set','tennis racquet','waterslide','yoga',
+  'belt','bowtie','flip flops','hat','jacket','pants','shoe','shorts','sock','sweater','t-shirt','underwear',
+  'book','calculator','calendar','computer','crayon','envelope','eraser','keyboard','laptop','map','marker','paper clip','pencil','postcard','spreadsheet',
+  'camouflage','cannon','megaphone','passport','rifle','roller coaster','smiley face','sword','teddy-bear',
+  'cello','clarinet','drums','guitar','harp','microphone','piano','saxophone','trombone','trumpet','violin',
+  'circle','diamond','hexagon','line','octagon','square','squiggle','star','triangle','zigzag',
+  'coffee cup','cup','dishwasher','fork','frying pan','knife','microwave','mug','oven','spoon','stove','teapot','toaster','wine bottle','wine glass',
+  'the eiffel tower','the great wall of china','the mona lisa',
+]);
+
+// Backwards-compat alias used by the rest of the code
+const WORDS = WORDS_FLAT;
+
 let wordIdx = 0;
 let skipped = new Set();
 
-fetch('scribblio_word_list.txt')
-  .then(r => r.text())
-  .then(t => {
-    WORDS = t.split(/[,\n]/).map(w => w.trim()).filter(Boolean);
-    // Restore position from localStorage
-    wordIdx = parseInt(localStorage.getItem('dw_idx') || '0');
-    if (wordIdx >= WORDS.length) wordIdx = 0;
-    try { skipped = new Set(JSON.parse(localStorage.getItem('dw_skipped') || '[]')); } catch(e) {}
-    updateWord();
-    updateProgress();
-  });
+// Init: restore position, skip already-drawn words by default
+(function init() {
+  wordIdx = parseInt(localStorage.getItem('dw_idx') || '0');
+  if (wordIdx >= WORDS.length) wordIdx = 0;
+  try { skipped = new Set(JSON.parse(localStorage.getItem('dw_skipped') || '[]')); } catch(e) {}
+  updateWord();
+  updateProgress();
+})();
 
 // ── CANVAS ────────────────────────────────────────────────────────────────
 let strokes = [];       // [{sw, pts:[{x,y}]}]
@@ -322,17 +372,22 @@ function updateStrokeInfo() {
 // ── WORD NAVIGATION ───────────────────────────────────────────────────────
 function updateWord() {
   if (!WORDS.length) return;
-  const word = WORDS[wordIdx];
-  document.getElementById('current-word').textContent = word;
-  document.getElementById('progress-label').textContent = `${wordIdx + 1} / ${WORDS.length}`;
-  // Guess category from word length as a rough hint
-  const badge = word.includes(' ') ? 'PHRASE' : word.length <= 3 ? 'SHORT' : '';
-  document.getElementById('category-badge').textContent = badge;
+  const entry = WORDS[wordIdx];
+  const word = entry.word;
+  const isDone = ALREADY_DRAWN.has(word);
+  document.getElementById('current-word').textContent = word.toUpperCase();
+  document.getElementById('current-word').style.color = isDone ? '#3a7a3a' : '#fff';
+  document.getElementById('category-badge').textContent =
+    entry.cat.toUpperCase() + (isDone ? ' · ALREADY DRAWN' : '');
+  document.getElementById('category-badge').style.color = isDone ? '#3a7a3a' : '#555';
   localStorage.setItem('dw_idx', wordIdx);
+  updateProgress();
 }
 
 function updateProgress() {
-  document.getElementById('progress-label').textContent = `${wordIdx + 1} / ${WORDS.length}`;
+  const remaining = WORDS.filter(e => !ALREADY_DRAWN.has(e.word)).length;
+  document.getElementById('progress-label').textContent =
+    `${wordIdx + 1} / ${WORDS.length}  ·  ${remaining} TO DRAW`;
 }
 
 function skipWord() {
@@ -356,15 +411,14 @@ function onJumpInput(val) {
 function jumpToWord() {
   const val = document.getElementById('jump-input').value.trim().toLowerCase();
   if (!val) return;
-  // Try exact match first, then partial
-  let idx = WORDS.findIndex(w => w.toLowerCase() === val);
-  if (idx < 0) idx = WORDS.findIndex(w => w.toLowerCase().includes(val));
+  let idx = WORDS.findIndex(e => e.word.toLowerCase() === val);
+  if (idx < 0) idx = WORDS.findIndex(e => e.word.toLowerCase().includes(val));
   if (idx >= 0) {
     wordIdx = idx;
     clearCanvas();
     updateWord();
     document.getElementById('jump-input').value = '';
-    toast(`Jumped to "${WORDS[idx]}"`);
+    toast(`Jumped to "${WORDS[idx].word}"`);
   } else {
     toast('Word not found');
   }
@@ -391,13 +445,12 @@ function strokeToPath(pts, canvasSize) {
 
 function saveDrawing() {
   if (!strokes.length) return;
-  const word = WORDS[wordIdx];
+  const { word, cat } = WORDS[wordIdx];
   const canvas = document.getElementById('drawCanvas');
   const paths = strokes.map(s => strokeToPath(s.pts, canvas.width));
   const saved = loadSaved();
-  // Replace if same word already saved
   const existIdx = saved.findIndex(s => s.word.toLowerCase() === word.toLowerCase());
-  const entry = { word, strokes: paths, sw, savedAt: Date.now() };
+  const entry = { word, cat, strokes: paths, sw, savedAt: Date.now() };
   if (existIdx >= 0) saved[existIdx] = entry;
   else saved.push(entry);
   writeSaved(saved);
@@ -414,8 +467,9 @@ function exportDrawings() {
   // Format as game DRAWINGS array entries
   const lines = saved.map((s, i) => {
     const id = String(9000 + i).padStart(4, '0');
+    const category = (s.cat || 'misc').toLowerCase();
     const strokesJson = JSON.stringify(s.strokes);
-    return `  { id:"${id}", word:"${s.word}", category:"misc", strokes:${strokesJson} }`;
+    return `  { id:"${id}", word:"${s.word}", category:"${category}", strokes:${strokesJson} }`;
   });
 
   const js = `// Custom drawings — paste into drawings.js\nconst CUSTOM_DRAWINGS = [\n${lines.join(',\n')}\n];\n`;
