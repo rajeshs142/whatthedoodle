@@ -487,7 +487,25 @@ function updateScoreDisplay() {
 }
 
 function resetAllData() {
-  if (!confirm('Reset all scores and progress?')) return;
+  // Custom confirm modal instead of native confirm() which shows browser logo on Android
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--surface);color:var(--text);border-radius:12px;padding:28px 24px;max-width:300px;width:90%;text-align:center;';
+  box.innerHTML = `
+    <div style="font-size:1.1rem;font-weight:700;margin-bottom:10px;letter-spacing:1px;">RESET ALL DATA?</div>
+    <div style="font-size:0.85rem;color:var(--sub);margin-bottom:24px;">All scores and progress will be permanently deleted.</div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button id="_reset_cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:0.9rem;cursor:pointer;">CANCEL</button>
+      <button id="_reset_confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#c1121f;color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;">RESET</button>
+    </div>`;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  document.getElementById('_reset_cancel').onclick = () => overlay.remove();
+  document.getElementById('_reset_confirm').onclick = () => { overlay.remove(); _doResetAllData(); };
+  return;
+}
+function _doResetAllData() {
   try {
     localStorage.removeItem('qg_idx');
     localStorage.removeItem('qg_best');

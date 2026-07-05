@@ -21,7 +21,7 @@
 }
 .dark {
   --bg: #141210; --surface: #1e1c18; --border: #2e2c26;
-  --text: #f0ece0; --sub: #706858; --ink: #f0ece0;
+  --text: #f0ece0; --sub: #a89880; --ink: #f0ece0;
   --correct: #52b788; --correct-bg: #1a2e22;
   --wrong: #e63946; --wrong-bg: #2e1a1c;
   --canvas-bg: #1a1814; --stroke-color: #f0ece0;
