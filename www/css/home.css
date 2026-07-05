@@ -178,8 +178,12 @@
 /* Start / End special nodes */
 .level-bubble.node-start { background: linear-gradient(135deg,#ffd700,#ff8c00); border: 3px solid rgba(255,255,255,0.9); cursor: pointer; box-shadow: 0 0 32px #ffd700dd, 0 0 64px #ffd70077, 0 10px 28px rgba(0,0,0,0.65); }
 .level-bubble.node-end   { background: linear-gradient(135deg,#e040fb,#7c4dff); border: 3px solid rgba(255,255,255,0.9); cursor: pointer; box-shadow: 0 0 32px #e040fbdd, 0 0 64px #e040fb77, 0 10px 28px rgba(0,0,0,0.65); }
+.level-bubble.node-more  { background: linear-gradient(135deg,#7c4dff,#448aff); border: 3px dashed rgba(255,255,255,0.7); cursor: pointer; box-shadow: 0 0 24px #7c4dffaa, 0 10px 28px rgba(0,0,0,0.65); }
+.level-bubble.node-more .node-play { font-size: 20px; font-weight: 900; color: #fff; }
+.level-bubble.node-more .node-tag  { color: rgba(255,255,255,0.9); }
 .level-bubble.node-start:hover,
-.level-bubble.node-end:hover { transform: scale(1.12); }
+.level-bubble.node-end:hover,
+.level-bubble.node-more:hover { transform: scale(1.12); }
 
 /* Node inner layout helpers */
 .node-inner { display:flex; flex-direction:column; align-items:center; gap:4px; }
@@ -205,3 +209,37 @@
 }
 .result-stars .star-on  { color: #f0c040; }
 .result-stars .star-off { color: var(--border); }
+
+/* ── STORE OVERLAY ──────────────────────────────────────────────────────── */
+#storeOverlay { display: none; }
+#storeOverlay.show { display: flex; }
+
+.store-tier {
+  width: 100%; max-width: 340px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  background: var(--surface);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.store-tier-premium {
+  border-color: var(--correct);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--correct) 25%, transparent);
+}
+.store-tier-label {
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 3px;
+  color: var(--sub); text-transform: uppercase;
+}
+.store-tier-premium .store-tier-label { color: var(--correct); }
+.store-tier-price {
+  font-size: 2rem; font-weight: 800; color: var(--text); line-height: 1;
+}
+.store-tier-list {
+  list-style: none; display: flex; flex-direction: column; gap: 6px;
+  font-size: 0.78rem; color: var(--text); letter-spacing: 0.03em; line-height: 1.4;
+}
+.store-tier-current {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 2px;
+  color: var(--sub); text-transform: uppercase; text-align: center;
+  padding: 8px 0 0; border-top: 1px solid var(--border);
+}

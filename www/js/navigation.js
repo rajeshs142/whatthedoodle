@@ -415,11 +415,16 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
       let cls = '', inner = '';
 
       if (isStart || isEnd) {
-        cls   = isStart ? 'node-start' : 'node-end';
-        const tag = isStart
-          ? `<span class="node-tag">START</span>`
-          : `<span class="node-tag">END</span>`;
-        inner = `<div class="node-inner">${numLbl}${tag}</div>`;
+        if (isStart) {
+          cls   = 'node-start';
+          inner = `<div class="node-inner">${numLbl}<span class="node-tag">START</span></div>`;
+        } else if (typeof hasFullAccess === 'function' && hasFullAccess()) {
+          cls   = 'node-end';
+          inner = `<div class="node-inner">${numLbl}<span class="node-tag">END</span></div>`;
+        } else {
+          cls   = 'node-more';
+          inner = `<div class="node-inner"><span class="node-play">+</span><span class="node-tag">MORE</span></div>`;
+        }
       } else if (played) {
         cls   = 'node-played';
         inner = `<div class="node-inner">${numLbl}<span class="node-stars">${'★'.repeat(starCount)}<span class="star-off">${'☆'.repeat(3 - starCount)}</span></span></div>`;
@@ -436,7 +441,9 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
       bubble.style.cssText = `left:${c.x - BUBBLE/2 + offsetX}px;top:${c.y - BUBBLE/2}px;z-index:2;`;
       if (sectionColor) bubble.style.setProperty('--node-color', sectionColor);
       bubble.innerHTML = inner;
-      if (played)   bubble.addEventListener('click', () => showLevelPreview(i));
+      if (played)        bubble.addEventListener('click', () => showLevelPreview(i));
+      else if (isEnd && !(typeof hasFullAccess === 'function' && hasFullAccess()))
+                         bubble.addEventListener('click', () => showStorePage());
       else if (playable) bubble.addEventListener('click', () => playMapNode(i));
       pathEl.appendChild(bubble);
     });
@@ -617,6 +624,10 @@ function playMapNode(nodeIdx) {
   const { nodes } = buildMapSequence();
   const node = nodes[nodeIdx];
   if (!node || !isSectionUnlocked(node.sectionIdx)) return;
+  if (typeof canPlayLevel === 'function' && !canPlayLevel(nodeIdx)) {
+    showStorePage();
+    return;
+  }
   soundNodeTap();
   gameMode          = 'levels';
   currentMapNodeIdx = nodeIdx;

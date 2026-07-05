@@ -87,11 +87,11 @@ html, body { height: 100%; background: #111; color: #eee; font-family: system-ui
 
 .card-word {
   font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
-  color: #888; padding: 6px 8px 4px; text-transform: uppercase;
+  color: #ccc; padding: 6px 8px 4px; text-transform: uppercase;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.word-card.has-drawing .card-word { color: #5a5; }
-.word-card.is-drawn .card-word { color: #334; }
+.word-card.has-drawing .card-word { color: #6d6; }
+.word-card.is-drawn .card-word { color: #7a7; }
 
 .card-canvas {
   width: 100%; aspect-ratio: 1; display: block; background: #111;
@@ -103,7 +103,8 @@ html, body { height: 100%; background: #111; color: #eee; font-family: system-ui
   justify-content: center; color: #2a2a2a; font-size: 1.4rem;
   background: #111; user-select: none;
 }
-.word-card.is-drawn .card-empty { color: #1e2e1e; font-size: 0.65rem; color: #2a4a2a; letter-spacing: 1px; }
+/* in-game canvas is dimmed so you can distinguish from newly saved */
+.word-card.is-drawn .card-canvas { opacity: 0.45; }
 
 .card-actions {
   display: flex; border-top: 1px solid #1e1e1e;
@@ -170,6 +171,7 @@ html, body { height: 100%; background: #111; color: #eee; font-family: system-ui
   <div id="empty-state">NO WORDS MATCH</div>
 </div>
 
+<script src="drawings.js"></script>
 <script>
 // ── CATALOGUE (same as draw_words.html) ───────────────────────────────────
 const CATALOGUE = [
@@ -217,6 +219,12 @@ const ALREADY_DRAWN = new Set([
   'coffee cup','cup','dishwasher','fork','frying pan','knife','microwave','mug','oven','spoon','stove','teapot','toaster','wine bottle','wine glass',
   'the eiffel tower','the great wall of china','the mona lisa',
 ]);
+
+// Build lookup: word → drawing entry from drawings.js
+const IN_GAME_MAP = {};
+if (typeof DRAWINGS !== 'undefined') {
+  DRAWINGS.forEach(d => { IN_GAME_MAP[d.word.toLowerCase()] = d; });
+}
 
 const SAVE_KEY = 'dw_saved';
 
@@ -335,10 +343,20 @@ function render() {
         card.appendChild(canvas);
         requestAnimationFrame(() => renderCanvas(canvas, saved));
       } else if (drawn) {
-        const empty = document.createElement('div');
-        empty.className = 'card-empty';
-        empty.textContent = 'IN GAME';
-        card.appendChild(empty);
+        const inGameEntry = IN_GAME_MAP[word.toLowerCase()];
+        if (inGameEntry) {
+          const canvas = document.createElement('canvas');
+          canvas.className = 'card-canvas';
+          canvas.width = 120;
+          canvas.height = 120;
+          card.appendChild(canvas);
+          requestAnimationFrame(() => renderCanvas(canvas, { strokes: inGameEntry.strokes, sw: 3 }));
+        } else {
+          const empty = document.createElement('div');
+          empty.className = 'card-empty';
+          empty.textContent = 'IN GAME';
+          card.appendChild(empty);
+        }
       } else {
         const empty = document.createElement('div');
         empty.className = 'card-empty';

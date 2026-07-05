@@ -529,3 +529,50 @@ function _doResetAllData() {
   if (pathEl) pathEl.innerHTML = '';
   setTimeout(() => showStatsPage(_statsReturnPage), 0);
 }
+
+// ── STORE / IAP ───────────────────────────────────────────────────────────
+const STORE_KEY = 'wtd_full_access';
+
+function hasFullAccess() {
+  return localStorage.getItem(STORE_KEY) === '1';
+}
+
+function showStorePage() {
+  const el = document.getElementById('storeOverlay');
+  if (!el) return;
+  el.classList.add('show');
+  el.style.display = 'flex';
+  const msg = document.getElementById('storeMsg');
+  if (hasFullAccess()) {
+    document.getElementById('storeBuyBtn').textContent = 'PURCHASED ✓';
+    document.getElementById('storeBuyBtn').disabled = true;
+    if (msg) msg.textContent = 'You have full access. Thank you for your support!';
+  } else {
+    document.getElementById('storeBuyBtn').textContent = 'BUY — $2.99';
+    document.getElementById('storeBuyBtn').disabled = false;
+    if (msg) msg.textContent = '';
+  }
+}
+
+function hideStorePage() {
+  const el = document.getElementById('storeOverlay');
+  if (!el) return;
+  el.classList.remove('show');
+  el.style.display = 'none';
+}
+
+function onStoreBuy() {
+  // TODO: wire up Google Play Billing (one-time product purchase)
+  // For now: show coming-soon message. Replace with real IAP call when ready.
+  const msg = document.getElementById('storeMsg');
+  if (msg) msg.textContent = 'In-app purchase coming soon. Check back after launch!';
+}
+
+// Free tier: first 200 levels (nodes 0–199). Full access: all levels.
+const FREE_LEVEL_LIMIT = 200;
+
+function canPlayLevel(nodeIdx) {
+  // Node at FREE_LEVEL_LIMIT - 1 (index 199) is the MORE/END boundary node —
+  // its click is handled separately (showStorePage), so we only gate nodes beyond it.
+  return hasFullAccess() || nodeIdx < FREE_LEVEL_LIMIT - 1;
+}

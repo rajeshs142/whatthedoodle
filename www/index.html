@@ -26,6 +26,7 @@
 
         <button class="home-btn primary" onclick="onPlayClick()">PLAY</button>
       <button class="home-btn secondary" id="homeDailyBtn" onclick="startDailyMode()">DAILY</button>
+      <button class="home-btn secondary" onclick="showStorePage()">ALL CATEGORIES</button>
       <button class="home-btn secondary" onclick="showDoodlesPage()">CREATE MY DOODLE</button>
       <button class="home-btn secondary" onclick="showSettingsPage()">SETTINGS</button>
       </div>
@@ -401,6 +402,51 @@
 
 
     </div>
+
+<!-- STORE OVERLAY -->
+<div id="storeOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:var(--bg);flex-direction:column;overflow-y:auto">
+  <div class="page-header">
+    <span class="page-header-title">UNLOCK ALL</span>
+  </div>
+  <div class="page-content" style="gap:16px;padding:16px;align-items:center">
+
+    <!-- FREE tier -->
+    <div class="store-tier" style="border-color:var(--border)">
+      <div class="store-tier-label">FREE</div>
+      <div class="store-tier-price">$0</div>
+      <ul class="store-tier-list">
+        <li>✓ 200 levels (first 4 categories)</li>
+        <li>✓ Daily puzzle (1 new doodle/day)</li>
+        <li>✓ Create &amp; share your own doodles</li>
+        <li style="color:var(--sub)">✗ All 1000 levels</li>
+        <li style="color:var(--sub)">✗ Play by category</li>
+        <li style="color:var(--sub)">✗ All 20 categories</li>
+      </ul>
+      <div class="store-tier-current">CURRENT PLAN</div>
+    </div>
+
+    <!-- PAID tier -->
+    <div class="store-tier store-tier-premium">
+      <div class="store-tier-label">FULL ACCESS</div>
+      <div class="store-tier-price" id="storePriceLabel">$2.99</div>
+      <ul class="store-tier-list">
+        <li>✓ All 1000 levels</li>
+        <li>✓ All 20 categories unlocked</li>
+        <li>✓ Play by category</li>
+        <li>✓ Daily puzzle</li>
+        <li>✓ Create &amp; share your own doodles</li>
+        <li>✓ One-time purchase, no subscription</li>
+      </ul>
+      <button class="overlay-btn primary" id="storeBuyBtn" onclick="onStoreBuy()" style="width:100%;margin-top:8px">BUY — $2.99</button>
+    </div>
+
+    <div id="storeMsg" style="font-size:0.7rem;color:var(--sub);text-align:center;letter-spacing:0.05em;line-height:1.6;max-width:300px"></div>
+
+  </div>
+  <div class="page-footer">
+    <button class="overlay-btn home" onclick="hideStorePage()">BACK</button>
+  </div>
+</div>
 
 <!-- SHARE SHEET -->
 <div id="shareSheet">

@@ -41,6 +41,16 @@
   font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 700;
   padding: 0 8px; outline: none;
 }
+.cfg-row select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 0 28px 0 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+}
 .cfg-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--correct); margin-top: 6px; }
 .cfg-check { flex-direction: row; align-items: center; gap: 8px; }
 
