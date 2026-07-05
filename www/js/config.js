@@ -23,7 +23,7 @@ const CONFIG = {
   showMillis:      false,        // show centiseconds (SS.cc) in timer
 
   // ── DAILY PUZZLE ──────────────────────────────────────────────────────────
-  startDate:       '2026-05-01', // day-0 date (YYYY-MM-DD)
+  startDate:       '2026-07-01', // day-0 date (YYYY-MM-DD)
   gamesPerDay:     1,            // drawings per day
 
   // ── SUGGESTIONS ───────────────────────────────────────────────────────────
