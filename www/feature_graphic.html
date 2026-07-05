@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Feature Graphic Generator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 24px;
+    font-family: sans-serif;
+    color: #fff;
+  }
+  canvas { display: block; max-width: 100%; }
+  .label { font-size: 12px; opacity: 0.5; letter-spacing: 0.1em; text-transform: uppercase; }
+  button {
+    padding: 12px 28px; background: #7c4dff; color: #fff;
+    border: none; border-radius: 8px; font-size: 15px;
+    cursor: pointer; letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<span class="label">Feature Graphic — 1024 × 500</span>
+<canvas id="fg" width="1024" height="500"></canvas>
+<button onclick="downloadFG()">Download 1024×500 PNG</button>
+
+<script src="drawings.js"></script>
+<script>
+const canvas = document.getElementById('fg');
+const ctx = canvas.getContext('2d');
+
+function parsePath(d) {
+  const points = [];
+  const tokens = d.trim().split(/\s+/);
+  tokens.forEach(tok => {
+    if (tok === 'M' || tok === 'L') return;
+    const parts = tok.split(',');
+    if (parts.length === 2) {
+      const x = parseFloat(parts[0]);
+      const y = parseFloat(parts[1]);
+      if (!isNaN(x) && !isNaN(y)) points.push({x, y});
+    }
+  });
+  return points;
+}
+
+function getBBox(strokes) {
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  strokes.forEach(s => parsePath(s).forEach(({x,y}) => {
+    minX=Math.min(minX,x); minY=Math.min(minY,y);
+    maxX=Math.max(maxX,x); maxY=Math.max(maxY,y);
+  }));
+  return {minX,minY,w:maxX-minX,h:maxY-minY};
+}
+
+function drawDoodle(ctx, strokes, cx, cy, size, rotation, alpha) {
+  const bbox = getBBox(strokes);
+  const scale = size / Math.max(bbox.w, bbox.h);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = Math.max(1, size * 0.025);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  strokes.forEach(s => {
+    const points = parsePath(s);
+    if (points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(
+      (points[0].x - bbox.minX - bbox.w/2) * scale,
+      (points[0].y - bbox.minY - bbox.h/2) * scale
+    );
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(
+        (points[i].x - bbox.minX - bbox.w/2) * scale,
+        (points[i].y - bbox.minY - bbox.h/2) * scale
+      );
+    }
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+// Seeded random
+let seed = 12345;
+function rand() {
+  seed = (seed * 9301 + 49297) % 233280;
+  return seed / 233280;
+}
+
+function draw() {
+  seed = 12345;
+  const W = 1024, H = 500;
+  ctx.clearRect(0, 0, W, H);
+
+  // Purple background
+  ctx.fillStyle = '#7c4dff';
+  ctx.fillRect(0, 0, W, H);
+
+  // Place doodles in a grid with random offsets, avoiding center
+  const centerX = W / 2, centerY = H / 2;
+  const clearR = 110; // keep center clear for ?
+
+  // Pick 40 random drawings
+  const picks = [];
+  const pool = [...DRAWINGS];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const selected = pool.slice(0, 140);
+
+  // Grid-ish placement across the canvas
+  const cols = 12, rows = 6;
+  const cellW = W / cols, cellH = H / rows;
+
+  selected.forEach((drawing, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = cellW * col + cellW * 0.5 + (rand() - 0.5) * cellW * 0.5;
+    const cy = cellH * row + cellH * 0.5 + (rand() - 0.5) * cellH * 0.5;
+
+    // Skip if too close to center
+    const dx = cx - centerX, dy = cy - centerY;
+    if (Math.sqrt(dx*dx + dy*dy) < clearR) return;
+
+    const size = 55 + rand() * 35;
+    const rotation = (rand() - 0.5) * Math.PI * 0.5;
+    const alpha = 0.55 + rand() * 0.35;
+
+    drawDoodle(ctx, drawing.strokes, cx, cy, size, rotation, alpha);
+  });
+
+  // Slightly wobbly hand-drawn circle
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = 1;
+  const cR = 95;
+  const steps = 80;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * Math.PI * 2 - Math.PI / 2;
+    // slight wobble using sin harmonics
+    const wobble = 1 + 0.018 * Math.sin(angle * 3 + 1.2) + 0.012 * Math.sin(angle * 7 + 0.5);
+    const x = centerX + Math.cos(angle) * cR * wobble;
+    const y = centerY + Math.sin(angle) * cR * wobble;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+
+  // "?" — single continuous stroke path + separate dot
+  ctx.save();
+  ctx.translate(centerX, centerY - 10);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(255,255,255,0.4)';
+  ctx.shadowBlur = 16;
+
+  // Single stroke: arc curving down into stem
+  ctx.beginPath();
+  ctx.moveTo(-28, -30);
+  ctx.bezierCurveTo(-28, -62, 28, -62, 28, -30);
+  ctx.bezierCurveTo(28, -8, 0, -4, 0, 22);
+  ctx.stroke();
+
+  // Dot
+  ctx.beginPath();
+  ctx.arc(0, 40, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+draw();
+
+function downloadFG() {
+  draw();
+  const a = document.createElement('a');
+  a.download = 'whatthedoodle_feature_graphic.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+</script>
+</body>
+</html>
