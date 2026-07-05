@@ -69,7 +69,7 @@ function generateMultiDoodleUrl(payloads) {
       ? LZString.compressToEncodedURIComponent(json)
       : btoa(unescape(encodeURIComponent(json)));
   } catch(e) { enc = btoa(json); }
-  return window.location.href.split('?')[0] + '?doodle=' + enc;
+  return 'https://playdropstack.com/whatthedoodle/?doodle=' + enc;
 }
 
 function shareSelectedDoodles() {
@@ -93,7 +93,7 @@ function shareDay() {
   const slots = p[playingDay] || [];
   const won = slots.filter(s => s > 0).length;
   const pts = slots.filter(s => s > 0).reduce((a, b) => a + b, 0);
-  const url = window.location.href.split('?')[0];
+  const url = 'https://playdropstack.com/whatthedoodle/';
   const result = won > 0 ? `✅ Got it! ${pts} pts` : `❌ Missed it`;
   const text = `What the Doodle? — Day ${playingDay + 1}\n${result}`;
   showShareSheet('What the Doodle?', url, text);
@@ -109,7 +109,7 @@ function shareDoodleResult() {
 }
 
 function shareLevel() {
-  const url = window.location.href.split('?')[0];
+  const url = 'https://playdropstack.com/whatthedoodle/';
   const stars = currentMapNodeIdx !== undefined
     ? (loadStars()[currentDrawing?.id] || 0) : 0;
   const levelNum = (currentMapNodeIdx || 0) + 1;
@@ -120,5 +120,5 @@ function shareLevel() {
 
 function playRealGame() {
   closeShareSheet();
-  window.location.href = window.location.href.split('?')[0];
+  window.location.href = 'https://playdropstack.com/whatthedoodle/';
 }
