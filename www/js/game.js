@@ -43,12 +43,20 @@ function loadDrawing() {
   setStatus('');
   resetCanvasWrap();
   clearCanvas();
-  if (gameMode === 'levels') {
+  const _sep = document.getElementById('dayLabelSep');
+  if (gameMode === 'category') {
+    document.getElementById('dayLabel').style.display = '';
+    document.getElementById('dayLabel').textContent   = currentCatName ? currentCatName.toUpperCase() : '';
+    if (_sep) _sep.style.display = '';
+    document.getElementById('drawingNum').textContent = `${currentCatIdx + 1}`;
+  } else if (gameMode === 'levels') {
     document.getElementById('dayLabel').style.display = 'none';
+    if (_sep) _sep.style.display = 'none';
     document.getElementById('drawingNum').textContent = `LVL ${currentMapNodeIdx + 1}`;
   } else {
     document.getElementById('dayLabel').style.display = '';
     document.getElementById('dayLabel').textContent   = `DAY ${playingDay + 1}`;
+    if (_sep) _sep.style.display = '';
     document.getElementById('drawingNum').textContent = `${playingSlot + 1}/${CONFIG.gamesPerDay}`;
   }
 
@@ -417,6 +425,11 @@ function showResult(won, finalScore) {
     levelBtns.style.display = 'none';
     nextBtn.textContent = isLastSlot ? 'SEE RESULTS →' : 'NEXT DRAWING →';
     nextBtn.onclick = doodleNextOrSummary;
+  } else if (gameMode === 'category') {
+    const stars = calcStars(finalScore, won);
+    if (stars > 0) { setCatLevelStars(currentDrawing.id, stars); soundLevelComplete(); }
+    showCatLevelSummary(stars, won, finalScore);
+    return;
   } else if (gameMode === 'levels') {
     const stars = calcStars(finalScore, won);
     if (stars > 0) { setLevelStars(currentDrawing.id, stars); soundLevelComplete(); }
@@ -493,8 +506,8 @@ function resetAllData() {
   const box = document.createElement('div');
   box.style.cssText = 'background:var(--surface);color:var(--text);border-radius:12px;padding:28px 24px;max-width:300px;width:90%;text-align:center;';
   box.innerHTML = `
-    <div style="font-size:1.1rem;font-weight:700;margin-bottom:10px;letter-spacing:1px;">RESET ALL DATA?</div>
-    <div style="font-size:0.85rem;color:var(--sub);margin-bottom:24px;">All scores and progress will be permanently deleted.</div>
+    <div style="font-size:1.1rem;font-weight:700;margin-bottom:10px;letter-spacing:1px;">START OVER?</div>
+    <div style="font-size:0.85rem;color:var(--sub);margin-bottom:24px;">This will erase all your scores, stars, and category progress. Cannot be undone.</div>
     <div style="display:flex;gap:12px;justify-content:center;">
       <button id="_reset_cancel" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:0.9rem;cursor:pointer;">CANCEL</button>
       <button id="_reset_confirm" style="flex:1;padding:10px;border-radius:8px;border:none;background:#c1121f;color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;">RESET</button>
@@ -512,6 +525,7 @@ function _doResetAllData() {
     localStorage.removeItem('qg_score');
     localStorage.removeItem('qg_progress');
     localStorage.removeItem('qg_stars');
+    localStorage.removeItem('qg_cat_stars');
   } catch(e) {}
   playingDay         = daysSinceStart();
   playingSlot        = 0;
@@ -534,7 +548,7 @@ function _doResetAllData() {
 const STORE_KEY = 'wtd_full_access';
 
 function hasFullAccess() {
-  return localStorage.getItem(STORE_KEY) === '1';
+  return true; // TODO: restore localStorage check before Play Store submission
 }
 
 function showStorePage() {
@@ -584,7 +598,54 @@ function hideStorePage() {
   el.style.display = 'none';
 }
 
-// ── CATEGORY BROWSE PAGE ──────────────────────────────────────────────────
+// ── CATEGORY FLOW STATE ───────────────────────────────────────────────────
+let currentCatName  = null; // active category name
+let currentCatIdx   = 0;    // index within that category's drawings array
+
+// One recognisable word per category for the card thumbnail
+const CAT_SAMPLE_WORD = {
+  animals:     'elephant',
+  food:        'pizza',
+  vehicles:    'car',
+  sports:      'basketball',
+  nature:      'tree',
+  household:   'candle',
+  body:        'hand',
+  clothing:    'sock',
+  kitchen:     'fork',
+  buildings:   'barn',
+  music:       'guitar',
+  tools:       'hammer',
+  accessories: 'necklace',
+  office:      'pencil',
+  people:      'astronaut',
+  weather:     'rainbow',
+  space:       'rocket',
+  ocean:       'whale',
+  emotions:    'smiley face',
+  misc:        'cannon',
+};
+
+function _renderDoodleOnCanvas(canvas, drawing) {
+  if (!canvas || !drawing || !drawing.strokes || !drawing.strokes.length) return;
+  const size = canvas.width;
+  const ctx  = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--stroke-color').trim() || '#1a1814';
+  ctx.lineWidth   = 10 * (size / 255);
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  const scale = size / 255;
+  drawing.strokes.forEach(pathStr => {
+    const p = new Path2D(pathStr);
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.stroke(p);
+    ctx.restore();
+  });
+}
+
+// ── ALL CATEGORIES PAGE ───────────────────────────────────────────────────
 function showCategoriesPage() {
   if (!hasFullAccess()) { showStorePage(); return; }
 
@@ -593,52 +654,178 @@ function showCategoriesPage() {
   grid.innerHTML = '';
 
   const worlds = getWorlds();
+  const stars  = loadCatStars();
+
   worlds.forEach(world => {
-    const theme = WORLD_THEMES[world.name] || WORLD_THEMES.misc;
+    const theme     = WORLD_THEMES[world.name] || WORLD_THEMES.misc;
+    const total     = world.drawings.length;
+    const played    = world.drawings.filter(d => stars[d.id] > 0).length;
+    const complete  = played === total && total > 0;
+
     const card = document.createElement('div');
-    card.className = 'cat-pick-card';
+    card.className = 'cat-pick-card' + (complete ? ' complete' : '');
     card.style.setProperty('--cat-color', theme.color);
-    card.innerHTML = `
-      <span class="cat-pick-emoji">${theme.emoji}</span>
-      <span class="cat-pick-name">${world.name}</span>
-      <span class="cat-pick-count">${world.drawings.length} words</span>`;
-    card.addEventListener('click', () => startCategoryPlay(world.name));
+
+    // Canvas for sample doodle
+    const canvas = document.createElement('canvas');
+    canvas.width  = 80;
+    canvas.height = 80;
+    canvas.className = 'cat-pick-canvas';
+
+    const meta = document.createElement('div');
+    meta.className = 'cat-pick-meta';
+    meta.innerHTML =
+      `<span class="cat-pick-name">${world.name}</span>` +
+      `<span class="cat-pick-count${complete ? ' done' : ''}">${played} / ${total}${complete ? ' ✓' : ''}</span>`;
+
+    card.appendChild(canvas);
+    card.appendChild(meta);
+    card.addEventListener('click', () => showCatLevelsPage(world.name));
     grid.appendChild(card);
+
+    // Draw sample doodle after insertion (needs to be in DOM for theme color)
+    requestAnimationFrame(() => {
+      const sampleWord = CAT_SAMPLE_WORD[world.name] || world.drawings[0]?.word;
+      const drawing = DRAWINGS.find(d => d.word === sampleWord && d.category === world.name)
+                   || DRAWINGS.find(d => d.word === sampleWord)
+                   || world.drawings[0];
+      _renderDoodleOnCanvas(canvas, drawing);
+    });
   });
 
   showPage('categories');
 }
 
-function startCategoryPlay(catName) {
+// ── CATEGORY LEVELS PAGE ──────────────────────────────────────────────────
+function showCatLevelsPage(catName) {
+  if (catName) currentCatName = catName;
+  if (!currentCatName) return;
+
+  const worlds = getWorlds();
+  const world  = worlds.find(w => w.name === currentCatName);
+  if (!world) return;
+
+  const stars = loadCatStars();
+  const title = document.getElementById('catLevelsTitle');
+  if (title) {
+    const theme = WORLD_THEMES[currentCatName] || {};
+    title.textContent = currentCatName.toUpperCase();
+  }
+
+  const grid = document.getElementById('catLevelsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  world.drawings.forEach((drawing, idx) => {
+    const starCount = stars[drawing.id];
+    const played    = starCount !== undefined;
+    const btn       = document.createElement('div');
+    btn.className   = 'cat-level-btn' + (played ? ' played' : '');
+    btn.style.setProperty('--cat-color', (WORLD_THEMES[currentCatName] || {}).color || '#888');
+    btn.innerHTML = played
+      ? `<span class="cat-lvl-num">${idx + 1}</span><span class="cat-lvl-stars">${'★'.repeat(starCount)}</span>`
+      : `<span class="cat-lvl-num">${idx + 1}</span>`;
+    btn.addEventListener('click', () => playCatLevel(idx));
+    grid.appendChild(btn);
+  });
+
+  showPage('cat-levels');
+}
+
+// ── CATEGORY GAMEPLAY ─────────────────────────────────────────────────────
+function playCatLevel(catIdx) {
   if (!hasFullAccess()) { showStorePage(); return; }
   const worlds = getWorlds();
-  const world = worlds.find(w => w.name === catName);
-  if (!world || !world.drawings.length) return;
+  const world  = worlds.find(w => w.name === currentCatName);
+  if (!world || catIdx >= world.drawings.length) return;
 
-  const stars = loadStars();
-  // Pick first unplayed drawing in this category, fall back to first
-  let drawing = world.drawings.find(d => !(stars[d.id] > 0)) || world.drawings[0];
+  currentCatIdx   = catIdx;
+  currentDrawing  = world.drawings[catIdx];
+  currentDrawingIdx = DRAWINGS.indexOf(currentDrawing);
+  gameMode        = 'category';
+  soundNodeTap();
+  loadDrawing();
+}
 
-  // Find this drawing's index in the map sequence nodes
-  const { nodes } = buildMapSequence();
-  let nodeIdx = nodes.findIndex(n => n.drawing.id === drawing.id);
-
-  if (nodeIdx !== -1) {
-    // Play via the map node (keeps map state consistent)
-    currentMapNodeIdx = nodeIdx;
-    currentDrawing    = drawing;
-    currentDrawingIdx = DRAWINGS.indexOf(drawing);
-    gameMode          = 'levels';
-    soundNodeTap();
-    loadDrawing();
+function goNextCatLevel() {
+  const worlds = getWorlds();
+  const world  = worlds.find(w => w.name === currentCatName);
+  if (!world) return;
+  const next = currentCatIdx + 1;
+  if (next < world.drawings.length) {
+    playCatLevel(next);
   } else {
-    // Drawing is beyond the current map — play directly
-    currentDrawing    = drawing;
-    currentDrawingIdx = DRAWINGS.indexOf(drawing);
-    gameMode          = 'levels';
-    soundNodeTap();
-    loadDrawing();
+    showCatLevelsPage();
   }
+}
+
+function replayCatLevel() {
+  playCatLevel(currentCatIdx);
+}
+
+function showCatLevelSummary(stars, won, score) {
+  if (stars > 0) {
+    for (let i = 0; i < stars; i++) setTimeout(() => soundStar(), i * 220);
+  }
+  const worlds = getWorlds();
+  const world  = worlds.find(w => w.name === currentCatName);
+  const isLast = !world || currentCatIdx >= world.drawings.length - 1;
+
+  const sc     = getComputedStyle(document.documentElement).getPropertyValue('--stroke-color').trim() || '#1a1814';
+  const bounds = getDrawingBounds(currentDrawing);
+  const mini   = buildMiniPainting({ strokes: currentDrawing.strokes }, bounds, won, sc, 0, 1);
+
+  const theme  = WORLD_THEMES[currentCatName] || {};
+  document.getElementById('summaryTitle').textContent    = `${currentCatName.toUpperCase()} ${currentCatIdx + 1}`;
+  document.getElementById('summaryCategory').textContent = won ? 'NICE ONE!' : 'TRY AGAIN!';
+  document.getElementById('summaryCategory').style.color = won ? 'var(--correct)' : 'var(--wrong)';
+
+  const ptsStatEl = document.getElementById('summaryTotalPts').closest('.stat');
+  if (score !== null) {
+    ptsStatEl.style.display = '';
+    document.getElementById('summaryTotalPts').textContent = won ? `+${score}` : '0';
+    document.getElementById('summaryPtsLabel').textContent = 'Points';
+  } else {
+    ptsStatEl.style.display = 'none';
+  }
+  const wonStatEl = document.getElementById('summaryWon').closest('.stat');
+  wonStatEl.style.display = '';
+  document.getElementById('summaryWon').innerHTML =
+    '<span class="star-on">' + '★'.repeat(stars) + '</span>' +
+    '<span class="star-off">' + '☆'.repeat(3 - stars) + '</span>';
+  document.getElementById('summaryWonLabel').textContent = 'Stars';
+
+  const wordColor = won
+    ? 'border-color:var(--correct);color:var(--correct);background:var(--correct-bg)'
+    : 'border-color:var(--wrong);color:var(--wrong);background:var(--wrong-bg)';
+  document.getElementById('summaryFrames').className = 'summary-frames';
+  document.getElementById('summaryFrames').innerHTML = `<div class="summary-item">
+    <div class="summary-painting">${mini}</div>
+    <div class="summary-info">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:1.5px;padding:2px 7px;border-radius:4px;border:1px solid;${wordColor}">${won ? currentDrawing.word.toUpperCase() : '???'}</div>
+    </div>
+  </div>`;
+
+  // Hide all button groups, show category ones
+  ['summaryDayBtnsWon','summaryDayBtnsFail','summaryDoodleBtns',
+   'summaryLevelBtnsPreview','summaryLevelBtnsWon','summaryLevelBtnsFail'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  if (won) {
+    document.getElementById('summaryCatBtnsWon').style.display = 'flex';
+    document.getElementById('summaryCatBtnsFail').style.display = 'none';
+    const nextBtn = document.getElementById('catNextBtn');
+    if (nextBtn) {
+      nextBtn.disabled    = isLast;
+      nextBtn.textContent = isLast ? 'ALL DONE!' : 'NEXT';
+    }
+  } else {
+    document.getElementById('summaryCatBtnsWon').style.display = 'none';
+    document.getElementById('summaryCatBtnsFail').style.display = 'flex';
+  }
+
+  showPage('summary');
 }
 
 function onStoreBuy() {

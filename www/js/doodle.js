@@ -707,6 +707,8 @@ function showDaySummary() {
   document.getElementById('summaryDayBtnsWon').style.display  = dayWon ? 'flex' : 'none';
   document.getElementById('summaryDayBtnsFail').style.display = dayWon ? 'none' : 'flex';
   document.getElementById('summaryDoodleBtns').style.display  = 'none';
+  document.getElementById('summaryCatBtnsWon').style.display  = 'none';
+  document.getElementById('summaryCatBtnsFail').style.display = 'none';
   document.getElementById('summaryLevelBtnsPreview').style.display = 'none';
   document.getElementById('summaryLevelBtnsWon').style.display     = 'none';
   document.getElementById('summaryLevelBtnsFail').style.display    = 'none';

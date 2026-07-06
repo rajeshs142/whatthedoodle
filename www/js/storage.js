@@ -48,6 +48,23 @@ function setLevelStars(drawingId, stars) {
   }
 }
 
+function loadCatStars() {
+  try { return JSON.parse(localStorage.getItem('qg_cat_stars') || '{}'); } catch(e) { return {}; }
+}
+function saveCatStarsStore(s) {
+  try { localStorage.setItem('qg_cat_stars', JSON.stringify(s)); } catch(e) {}
+}
+function getCatLevelStars(drawingId) {
+  return loadCatStars()[drawingId];
+}
+function setCatLevelStars(drawingId, stars) {
+  const s = loadCatStars();
+  if (s[drawingId] === undefined || stars > (s[drawingId] || 0)) {
+    s[drawingId] = stars;
+    saveCatStarsStore(s);
+  }
+}
+
 function addToHistory(word, score, won) {
   roundHistory.push({ word, score, won, strokes: currentDrawing.strokes, bounds: drawingBounds, guesses: [...currentGuesses] });
 }

@@ -72,9 +72,9 @@ const MAP_UNLOCK_PCT         = 0.70; // fraction of section to complete to unloc
 // ── WORLD ORDER (kid-friendly, easy → hard) ───────────────────────────────
 const WORLD_ORDER = [
   'animals','food','vehicles','sports','nature',
-  'household','shapes','body','clothing','kitchen',
-  'buildings','music','tools','health','accessories',
-  'office','fantasy','landmarks','misc'
+  'household','body','clothing','kitchen','buildings',
+  'music','tools','accessories','office','people',
+  'weather','space','ocean','emotions','misc'
 ];
 
 // ── WORLD THEMES (background color + emoji per category) ──────────────────
@@ -85,17 +85,18 @@ const WORLD_THEMES = {
   sports:      { color: '#ff1744', emoji: '⚽' },
   nature:      { color: '#00e676', emoji: '🌿' },
   household:   { color: '#d500f9', emoji: '🏠' },
-  shapes:      { color: '#00bcd4', emoji: '⬡' },
   body:        { color: '#ff4081', emoji: '💪' },
   clothing:    { color: '#651fff', emoji: '👕' },
   kitchen:     { color: '#ff9100', emoji: '🍳' },
   buildings:   { color: '#bcaaa4', emoji: '🏛' },
   music:       { color: '#7c4dff', emoji: '🎵' },
   tools:       { color: '#78909c', emoji: '🔧' },
-  health:      { color: '#f50057', emoji: '❤️' },
   accessories: { color: '#ffd740', emoji: '💎' },
   office:      { color: '#69f0ae', emoji: '📋' },
-  fantasy:     { color: '#ea80fc', emoji: '✨' },
-  landmarks:   { color: '#ffff00', emoji: '🗺️' },
+  people:      { color: '#ff80ab', emoji: '👤' },
+  weather:     { color: '#40c4ff', emoji: '🌤' },
+  space:       { color: '#7986cb', emoji: '🚀' },
+  ocean:       { color: '#00acc1', emoji: '🌊' },
+  emotions:    { color: '#ffca28', emoji: '😊' },
   misc:        { color: '#b0bec5', emoji: '⭐' },
 };

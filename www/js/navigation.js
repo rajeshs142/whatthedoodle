@@ -1,5 +1,5 @@
 // ── MODAL MANAGEMENT ─────────────────────────────────────────────────────
-const PAGES = ['home', 'levels', 'game', 'result', 'summary', 'doodles', 'create', 'doodle-result', 'settings', 'stats', 'archive', 'categories'];
+const PAGES = ['home', 'levels', 'game', 'result', 'summary', 'doodles', 'create', 'doodle-result', 'settings', 'stats', 'archive', 'categories', 'cat-levels'];
 // Pages that replace history (no back entry) vs push (back navigable)
 const _REPLACE_PAGES = new Set(['game', 'result']);
 
@@ -27,7 +27,7 @@ window.addEventListener('popstate', (e) => {
   if (onSettings && _settingsApplied) applyTheme(_settingsApplied.theme);
 
   const target = e.state?.page;
-  const _navigable = ['levels', 'summary', 'doodles', 'settings', 'stats', 'archive', 'create', 'doodle-result', 'categories'];
+  const _navigable = ['levels', 'summary', 'doodles', 'settings', 'stats', 'archive', 'create', 'doodle-result', 'categories', 'cat-levels'];
   if (target && _navigable.includes(target)) {
     PAGES.forEach(p => document.getElementById('page-' + p).classList.toggle('active', p === target));
     return;
@@ -164,6 +164,27 @@ function showLevelMap() {
   _showLevelMapRandom(nodes, sections, s, scrollEl, pathEl);
 }
 
+// ── MAP REVEAL THRESHOLDS ─────────────────────────────────────────────────
+// Paid users start with 250 visible. When currentMapNodeIdx reaches a trigger,
+// the ceiling grows to the corresponding reveal count.
+// Free users always stay at FREE_LEVEL_LIMIT (200), no reveal needed.
+const MAP_REVEAL_STEPS = [
+  { trigger: 180, reveal: 400  },
+  { trigger: 380, reveal: 600  },
+  { trigger: 580, reveal: 800  },
+  { trigger: 780, reveal: Infinity }, // show all remaining
+];
+const MAP_INITIAL_REVEAL = 250;
+
+function _getRevealCeiling(nodeIdx, totalNodes) {
+  let ceiling = MAP_INITIAL_REVEAL;
+  for (const step of MAP_REVEAL_STEPS) {
+    if (nodeIdx >= step.trigger) ceiling = step.reveal;
+    else break;
+  }
+  return Math.min(ceiling, totalNodes);
+}
+
 function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
   const BUBBLE = 50;
 
@@ -227,18 +248,33 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
     _W = Math.min(containerW, 420);
     const offsetX = Math.floor((containerW - _W) / 2);
     pathEl.innerHTML = '';
+
+    const paid = typeof hasFullAccess === 'function' && hasFullAccess();
+    const FREE_LIMIT = typeof FREE_LEVEL_LIMIT !== 'undefined' ? FREE_LEVEL_LIMIT : 200;
+    const visibleCount = paid
+      ? _getRevealCeiling(currentMapNodeIdx, nodes.length)
+      : Math.min(nodes.length, FREE_LIMIT);
+    const showFade = paid && visibleCount < nodes.length;
+
     const msNodeCount = sectionMeta[0]?.ms?.nodes?.length || nodes.length;
+    // Lap 0 sits at the bottom. Each extra lap extends upward by totalH (negative Y coords).
+    // We shift all child elements down by extraLaps*totalH so lap 0 stays at the bottom
+    // and higher laps fill in above it within the container.
+    const revealLaps = Math.ceil(visibleCount / msNodeCount);
     _lapCount = Math.ceil(nodes.length / msNodeCount);
-    pathEl.style.height = (totalH * _lapCount) + 'px';
+    const extraLaps = revealLaps - 1;
+    const yShift    = extraLaps * totalH;
+    pathEl.style.height    = (totalH * revealLaps) + 'px';
+    pathEl.style.marginTop = '0';
     pathEl.style.setProperty('--node-color', THEME_NODE_COLORS[CONFIG.theme] || '#ffffff');
 
     const _lightThemes = new Set(['light', 'sepia', 'ocean']);
 
-    for (let lap = 0; lap < _lapCount; lap++) {
+    for (let lap = 0; lap < revealLaps; lap++) {
     const lapOffsetY = lap * totalH;
     sectionMeta.forEach((m, sIdx) => {
       if (!m.ms || !m.height) return;
-      const topY    = sTopY[sIdx] - lapOffsetY;
+      const topY    = sTopY[sIdx] - lapOffsetY + yShift;
       const H       = m.height;
       const unlocked = isSectionUnlocked(sIdx);
 
@@ -412,8 +448,9 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
     });
 
     // ── Bubble nodes (z-index 2) ─────────────────────────────────────────
+    const renderUpTo = Math.min(visibleCount, maxValidIdx + 1);
     nodes.forEach((node, i) => {
-      if (i > maxValidIdx) return;
+      if (i >= renderUpTo) return;
       const c = getPos(i);
       if (!c) return;
       const { drawing, sectionIdx } = node;
@@ -424,18 +461,19 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
       const sectionColor = CONFIG.mapNodeColor === 'section' ? nodeTheme.color
                          : CONFIG.mapNodeColor !== 'theme'   ? CONFIG.mapNodeColor
                          : null;
-      const isStart = i === 0;
-      const isEnd   = i === maxValidIdx;
+      const isStart   = i === 0;
+      const isLastAll = i === maxValidIdx;
+      const isEnd     = isLastAll && !showFade;
 
       const levelNum = i + 1;
       const numLbl   = `<span class="map-node-num">${levelNum}</span>`;
       let cls = '', inner = '';
 
-      if (isStart || isEnd) {
-        if (isStart) {
-          cls   = 'node-start';
-          inner = `<div class="node-inner">${numLbl}<span class="node-tag">START</span></div>`;
-        } else if (typeof hasFullAccess === 'function' && hasFullAccess()) {
+      if (isStart) {
+        cls   = 'node-start';
+        inner = `<div class="node-inner">${numLbl}<span class="node-tag">START</span></div>`;
+      } else if (isEnd) {
+        if (paid) {
           cls   = 'node-end';
           inner = `<div class="node-inner">${numLbl}<span class="node-tag">END</span></div>`;
         } else {
@@ -455,21 +493,29 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
 
       const bubble = document.createElement('div');
       bubble.className = `level-bubble map-node map-node--${node.sectionIdx < sections.length ? sections[node.sectionIdx].category : 'misc'} ${cls}`;
-      bubble.style.cssText = `left:${c.x - BUBBLE/2 + offsetX}px;top:${c.y - BUBBLE/2}px;z-index:2;`;
+      bubble.style.cssText = `left:${c.x - BUBBLE/2 + offsetX}px;top:${c.y - BUBBLE/2 + yShift}px;z-index:2;`;
       if (sectionColor) bubble.style.setProperty('--node-color', sectionColor);
       bubble.innerHTML = inner;
-      if (played)        bubble.addEventListener('click', () => showLevelPreview(i));
-      else if (isEnd && !(typeof hasFullAccess === 'function' && hasFullAccess()))
-                         bubble.addEventListener('click', () => showStorePage());
-      else if (playable) bubble.addEventListener('click', () => playMapNode(i));
+      if (played)          bubble.addEventListener('click', () => showLevelPreview(i));
+      else if (isEnd && !paid) bubble.addEventListener('click', () => showStorePage());
+      else if (playable)   bubble.addEventListener('click', () => playMapNode(i));
       pathEl.appendChild(bubble);
     });
+
+    // ── Top fade overlay when more levels are hidden above ────────────────
+    if (showFade) {
+      const fade = document.createElement('div');
+      fade.style.cssText = 'position:absolute;top:0;left:0;right:0;height:120px;' +
+        'background:linear-gradient(to bottom,var(--bg) 0%,transparent 100%);' +
+        'pointer-events:none;z-index:10;';
+      pathEl.appendChild(fade);
+    }
 
     // ── Scroll to current node — set before paint so no visible jump ─────────
     const cur = getPos(currentMapNodeIdx);
     if (cur) {
       const h = scrollEl.clientHeight || window.innerHeight;
-      scrollEl.scrollTop = Math.max(0, cur.y - h * 0.4);
+      scrollEl.scrollTop = Math.max(0, cur.y + yShift - h * 0.4);
     }
   }
 
@@ -693,9 +739,11 @@ function showLevelSummary(stars, won, score, isPreview = false) {
     </div>
   </div>`;
 
-  document.getElementById('summaryDayBtnsWon').style.display  = 'none';
-  document.getElementById('summaryDayBtnsFail').style.display = 'none';
-  document.getElementById('summaryDoodleBtns').style.display = 'none';
+  document.getElementById('summaryDayBtnsWon').style.display   = 'none';
+  document.getElementById('summaryDayBtnsFail').style.display  = 'none';
+  document.getElementById('summaryDoodleBtns').style.display   = 'none';
+  document.getElementById('summaryCatBtnsWon').style.display   = 'none';
+  document.getElementById('summaryCatBtnsFail').style.display  = 'none';
   document.getElementById('summaryLevelBtnsPreview').style.display = isPreview ? 'flex' : 'none';
   document.getElementById('summaryLevelBtnsWon').style.display     = (!isPreview && stars > 0) ? 'flex' : 'none';
   document.getElementById('summaryLevelBtnsFail').style.display    = (!isPreview && stars === 0) ? 'flex' : 'none';

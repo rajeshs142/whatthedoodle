@@ -85,8 +85,7 @@ function getWorlds() {
     if (!map[cat]) map[cat] = [];
     map[cat].push(d);
   });
-  const ordered = WORLD_ORDER.filter(cat => map[cat] && map[cat].length > 0)
-    .map(cat => ({ name: cat, drawings: map[cat] }));
+  const ordered = WORLD_ORDER.map(cat => ({ name: cat, drawings: map[cat] || [] }));
   // Append any categories not in WORLD_ORDER into misc
   Object.keys(map).forEach(cat => {
     if (!WORLD_ORDER.includes(cat)) {

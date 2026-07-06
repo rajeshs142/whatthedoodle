@@ -58,7 +58,7 @@
       </div>
       <div style="text-align:center">
         <div id="timerDisplay" class="game-timer">00:00</div>
-        <div class="game-subline"><span id="dayLabel" style="display:none"></span><span id="drawingNum">1/3</span></div>
+        <div class="game-subline"><span id="dayLabel" style="display:none"></span><span id="dayLabelSep" style="display:none"> · </span><span id="drawingNum">1/3</span></div>
       </div>
       <div style="text-align:right">
         <div>Best</div>
@@ -201,17 +201,32 @@
     </div>
   </div>
 
-  <!-- PAGE: CATEGORIES -->
+  <!-- PAGE: ALL CATEGORIES -->
   <div id="page-categories" class="page">
     <div class="page-header">
       <span class="page-header-title">CATEGORIES</span>
     </div>
-    <div class="page-content" style="padding:16px;gap:12px">
-      <div style="font-size:0.65rem;font-weight:700;letter-spacing:2px;color:var(--sub);text-transform:uppercase;text-align:center">Pick a category to play</div>
+    <div class="page-content">
       <div id="catPickerGrid" class="cat-picker-grid"></div>
     </div>
     <div class="page-footer">
       <button class="overlay-btn home" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+  <!-- PAGE: CATEGORY LEVELS -->
+  <div id="page-cat-levels" class="page">
+    <div class="page-header">
+      <span class="page-header-title" id="catLevelsTitle">ANIMALS</span>
+    </div>
+    <div class="page-content">
+      <div id="catLevelsGrid" class="cat-levels-grid"></div>
+    </div>
+    <div class="page-footer">
+      <div class="summary-btn-row">
+        <button class="overlay-btn home" onclick="showHome()">HOME</button>
+        <button class="overlay-btn secondary" onclick="showCategoriesPage()">ALL CATEGORIES</button>
+      </div>
     </div>
   </div>
 
@@ -376,6 +391,21 @@
         <div class="summary-btn-row">
           <button class="overlay-btn secondary" onclick="shareLevel()">SHARE</button>
           <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
+        </div>
+      </div>
+      <!-- Category mode result buttons -->
+      <div id="summaryCatBtnsWon" style="display:none;width:100%;flex-direction:column;gap:8px">
+        <button class="overlay-btn primary" onclick="shareLevel()">SHARE RESULT</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" id="catNextBtn" onclick="goNextCatLevel()">NEXT</button>
+          <button class="overlay-btn secondary" onclick="showCatLevelsPage()">ALL LEVELS</button>
+        </div>
+      </div>
+      <div id="summaryCatBtnsFail" style="display:none;width:100%;flex-direction:column;gap:8px">
+        <button class="overlay-btn primary" onclick="replayCatLevel()">PLAY AGAIN</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" onclick="shareLevel()">SHARE</button>
+          <button class="overlay-btn secondary" onclick="showCatLevelsPage()">ALL LEVELS</button>
         </div>
       </div>
       <button class="overlay-btn home" onclick="showHome()">HOME</button>
