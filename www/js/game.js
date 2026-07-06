@@ -599,3 +599,29 @@ function canPlayLevel(nodeIdx) {
   // its click is handled separately (showStorePage), so we only gate nodes beyond it.
   return hasFullAccess() || nodeIdx < FREE_LEVEL_LIMIT - 1;
 }
+
+// ── DEV UNLOCK (tap logo 5× to toggle full access) ───────────────────────
+// Strip this block before submitting to Play Store.
+(function() {
+  let taps = 0, timer = null;
+  document.addEventListener('DOMContentLoaded', function() {
+    const logo = document.getElementById('homeLogo');
+    if (!logo) return;
+    logo.addEventListener('click', function() {
+      taps++;
+      clearTimeout(timer);
+      timer = setTimeout(function() { taps = 0; }, 1500);
+      if (taps >= 5) {
+        taps = 0;
+        const now = hasFullAccess();
+        localStorage.setItem(STORE_KEY, now ? '0' : '1');
+        const msg = now ? 'DEV: Full access OFF' : 'DEV: Full access ON ✓';
+        const toast = document.createElement('div');
+        toast.textContent = msg;
+        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:1px;z-index:9999;pointer-events:none';
+        document.body.appendChild(toast);
+        setTimeout(function() { toast.remove(); location.reload(); }, 900);
+      }
+    });
+  });
+})();
