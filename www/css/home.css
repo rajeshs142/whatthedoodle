@@ -237,9 +237,33 @@
 .store-tier-list {
   list-style: none; display: flex; flex-direction: column; gap: 6px;
   font-size: 0.78rem; color: var(--text); letter-spacing: 0.03em; line-height: 1.4;
+  padding: 0;
 }
+.store-tier-list li { display: flex; align-items: flex-start; gap: 7px; }
+.store-tier-list li::before { content: '✓'; color: var(--correct); font-weight: 800; flex-shrink: 0; }
 .store-tier-current {
   font-size: 0.65rem; font-weight: 700; letter-spacing: 2px;
   color: var(--sub); text-transform: uppercase; text-align: center;
   padding: 8px 0 0; border-top: 1px solid var(--border);
+}
+
+/* ── STORE CATEGORY GRID ────────────────────────────────────────────────── */
+.store-cat-grid {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.store-cat-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: color-mix(in srgb, var(--cat-color) 18%, var(--surface));
+  border: 1.5px solid color-mix(in srgb, var(--cat-color) 55%, transparent);
+  border-radius: 20px; padding: 5px 10px 5px 6px;
+  transition: transform 0.15s;
+}
+.store-cat-chip.locked {
+  filter: grayscale(0.5);
+  opacity: 0.55;
+}
+.store-cat-emoji { font-size: 0.95rem; line-height: 1; }
+.store-cat-name  {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: color-mix(in srgb, var(--cat-color) 90%, var(--text));
 }

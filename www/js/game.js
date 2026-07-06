@@ -542,6 +542,29 @@ function showStorePage() {
   if (!el) return;
   el.classList.add('show');
   el.style.display = 'flex';
+
+  // Build category grids using WORLD_THEMES
+  const FREE_CATS = ['animals', 'food', 'vehicles', 'sports'];
+  const freeGrid   = document.getElementById('storeCatsFree');
+  const lockedGrid = document.getElementById('storeCatsLocked');
+
+  function makeCatChip(key, theme, locked) {
+    const chip = document.createElement('div');
+    chip.className = 'store-cat-chip' + (locked ? ' locked' : '');
+    chip.style.setProperty('--cat-color', theme.color);
+    chip.innerHTML = `<span class="store-cat-emoji">${theme.emoji}</span><span class="store-cat-name">${key}</span>`;
+    return chip;
+  }
+
+  if (freeGrid && lockedGrid && typeof WORLD_THEMES !== 'undefined') {
+    freeGrid.innerHTML   = '';
+    lockedGrid.innerHTML = '';
+    Object.entries(WORLD_THEMES).forEach(([key, theme]) => {
+      const isFree = FREE_CATS.includes(key);
+      (isFree ? freeGrid : lockedGrid).appendChild(makeCatChip(key, theme, !isFree));
+    });
+  }
+
   const msg = document.getElementById('storeMsg');
   if (hasFullAccess()) {
     document.getElementById('storeBuyBtn').textContent = 'PURCHASED ✓';
