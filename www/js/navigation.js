@@ -199,16 +199,24 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
     });
   }
 
-  // Screen position of the i-th node in the flat nodes array
+  // How many laps of the path are needed to cover all nodes
+  let _lapCount = 1;
+
+  // Screen position of the i-th node.
+  // Nodes beyond the editor list wrap within the lap and shift Y upward by totalH per lap.
   function getPos(i) {
     const node = nodes[i];
     if (!node) return null;
     const m = sectionMeta[node.sectionIdx];
-    if (!m.ms || !m.ms.nodes[node.posInSection]) return null;
-    const norm = m.ms.nodes[node.posInSection];
+    if (!m.ms || !m.ms.nodes || !m.ms.nodes.length) return null;
+    const msNodeCount = m.ms.nodes.length;
+    const lap  = Math.floor(node.posInSection / msNodeCount);
+    const wrap = node.posInSection % msNodeCount;
+    const norm = m.ms.nodes[wrap];
+    if (!norm) return null;
     return {
       x: Math.round(norm.x * _W),
-      y: Math.round(sTopY[node.sectionIdx] + norm.y * m.height),
+      y: Math.round(sTopY[node.sectionIdx] + norm.y * m.height) - lap * totalH,
     };
   }
 
@@ -219,14 +227,18 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
     _W = Math.min(containerW, 420);
     const offsetX = Math.floor((containerW - _W) / 2);
     pathEl.innerHTML = '';
-    pathEl.style.height = totalH + 'px';
+    const msNodeCount = sectionMeta[0]?.ms?.nodes?.length || nodes.length;
+    _lapCount = Math.ceil(nodes.length / msNodeCount);
+    pathEl.style.height = (totalH * _lapCount) + 'px';
     pathEl.style.setProperty('--node-color', THEME_NODE_COLORS[CONFIG.theme] || '#ffffff');
 
     const _lightThemes = new Set(['light', 'sepia', 'ocean']);
 
+    for (let lap = 0; lap < _lapCount; lap++) {
+    const lapOffsetY = lap * totalH;
     sectionMeta.forEach((m, sIdx) => {
       if (!m.ms || !m.height) return;
-      const topY    = sTopY[sIdx];
+      const topY    = sTopY[sIdx] - lapOffsetY;
       const H       = m.height;
       const unlocked = isSectionUnlocked(sIdx);
 
@@ -250,11 +262,15 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
           `overflow:visible;pointer-events:none;z-index:0;` +
           (!unlocked ? 'opacity:1;' : '');
         dsvg.setAttribute('viewBox', `0 0 ${_W} ${H}`);
-        // For the flat map, compute the current node's normalized Y progress (0=top,1=bottom)
+        // Compute progress Y for doodle dimming — use wrapped index within this lap
         let progressY = null;
         if (m.sec.category === 'map' && m.ms.nodes && m.ms.nodes.length) {
-          const curNode = m.ms.nodes[Math.min(currentMapNodeIdx, m.ms.nodes.length - 1)];
-          if (curNode) progressY = curNode.y; // normalized 0–1
+          const curLap  = Math.floor(currentMapNodeIdx / m.ms.nodes.length);
+          const curWrap = currentMapNodeIdx % m.ms.nodes.length;
+          if (curLap === lap) {
+            const curNode = m.ms.nodes[curWrap];
+            if (curNode) progressY = curNode.y;
+          }
         }
 
         m.ms.doodles.forEach((dd, di) => {
@@ -307,7 +323,7 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
           `overflow:visible;pointer-events:none;z-index:1;`;
         psvg.setAttribute('viewBox', `0 0 ${_W} ${H}`);
         psvg.innerHTML = `<defs>
-          <filter id="path-glow-${sIdx}" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id="path-glow-${sIdx}-${lap}" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
@@ -332,8 +348,8 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
         });
         pathEl.appendChild(psvg);
 
-        // ── Completed path overlay ──────────────────────────────────────
-        const totalNodes = m.ms.nodes ? m.ms.nodes.length : 0;
+        // ── Completed path overlay (lap 0 only) ────────────────────────
+        const totalNodes = (lap === 0 && m.ms.nodes) ? m.ms.nodes.length : 0;
         if (totalNodes > 0 && m.sec.globalStart !== undefined) {
           let completedCount = 0;
           for (let ni = 0; ni < totalNodes; ni++) {
@@ -369,7 +385,7 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
                   p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', String(width));
                   p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
                   p.setAttribute('stroke-dasharray', `${doneLen.toFixed(1)} ${bigGap}`);
-                  if (glow) p.setAttribute('filter', `url(#path-glow-${sIdx})`);
+                  if (glow) p.setAttribute('filter', `url(#path-glow-${sIdx}-${lap})`);
                   return p;
                 };
                 psvg.appendChild(mkCP('rgba(255,255,255,0.3)', 10, 'complete-glow', true));
@@ -381,6 +397,7 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
         }
       }
     });
+    } // end lap loop
 
     // ── Pre-compute section gradient colours + max valid node index ────────
     const sectionColors = {};
