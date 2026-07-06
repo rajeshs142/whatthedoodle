@@ -123,8 +123,10 @@ function renderStarRow(count) {
 // ── MAP SEQUENCE ───────────────────────────────────────────────────────────
 // Returns {nodes, sections} for the continuous level map.
 // If MAP_SECTIONS has a 'map' entry (flat single-path mode), uses its node
-// positions and assigns shuffled drawings to them (up to 200).
-// Otherwise falls back to per-category sections.
+// positions and assigns shuffled drawings to them.
+// Free users are capped at FREE_LEVEL_LIMIT (200). Paid users get all drawings.
+function resetMapSequenceCache() { _mapSequence = null; }
+
 function buildMapSequence() {
   if (_mapSequence) return _mapSequence;
 
@@ -134,7 +136,8 @@ function buildMapSequence() {
     : null;
 
   if (flatMs) {
-    const MAX_NODES = 200;
+    const paid = typeof hasFullAccess === 'function' && hasFullAccess();
+    const MAX_NODES = paid ? DRAWINGS.length : (typeof FREE_LEVEL_LIMIT !== 'undefined' ? FREE_LEVEL_LIMIT : 200);
     const pool = DRAWINGS.slice(); // already shuffled by CONFIG.seed in shuffleDrawings()
 
     // Use stored nodes if available, otherwise auto-compute equidistant nodes from path

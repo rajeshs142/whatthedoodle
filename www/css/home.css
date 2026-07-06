@@ -247,6 +247,32 @@
   padding: 8px 0 0; border-top: 1px solid var(--border);
 }
 
+/* ── CATEGORY PICKER PAGE ───────────────────────────────────────────────── */
+.cat-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+.cat-pick-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 14px 8px;
+  background: color-mix(in srgb, var(--cat-color) 15%, var(--surface));
+  border: 1.5px solid color-mix(in srgb, var(--cat-color) 50%, transparent);
+  border-radius: 14px; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cat-pick-card:active { transform: scale(0.95); }
+.cat-pick-emoji { font-size: 1.8rem; line-height: 1; }
+.cat-pick-name  {
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--cat-color) 90%, var(--text));
+}
+.cat-pick-count {
+  font-size: 0.55rem; font-weight: 600; letter-spacing: 1px;
+  color: var(--sub); text-transform: uppercase;
+}
+
 /* ── STORE CATEGORY GRID ────────────────────────────────────────────────── */
 .store-cat-grid {
   display: flex; flex-wrap: wrap; gap: 8px;

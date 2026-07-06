@@ -584,11 +584,75 @@ function hideStorePage() {
   el.style.display = 'none';
 }
 
+// ── CATEGORY BROWSE PAGE ──────────────────────────────────────────────────
+function showCategoriesPage() {
+  if (!hasFullAccess()) { showStorePage(); return; }
+
+  const grid = document.getElementById('catPickerGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const worlds = getWorlds();
+  worlds.forEach(world => {
+    const theme = WORLD_THEMES[world.name] || WORLD_THEMES.misc;
+    const card = document.createElement('div');
+    card.className = 'cat-pick-card';
+    card.style.setProperty('--cat-color', theme.color);
+    card.innerHTML = `
+      <span class="cat-pick-emoji">${theme.emoji}</span>
+      <span class="cat-pick-name">${world.name}</span>
+      <span class="cat-pick-count">${world.drawings.length} words</span>`;
+    card.addEventListener('click', () => startCategoryPlay(world.name));
+    grid.appendChild(card);
+  });
+
+  showPage('categories');
+}
+
+function startCategoryPlay(catName) {
+  if (!hasFullAccess()) { showStorePage(); return; }
+  const worlds = getWorlds();
+  const world = worlds.find(w => w.name === catName);
+  if (!world || !world.drawings.length) return;
+
+  const stars = loadStars();
+  // Pick first unplayed drawing in this category, fall back to first
+  let drawing = world.drawings.find(d => !(stars[d.id] > 0)) || world.drawings[0];
+
+  // Find this drawing's index in the map sequence nodes
+  const { nodes } = buildMapSequence();
+  let nodeIdx = nodes.findIndex(n => n.drawing.id === drawing.id);
+
+  if (nodeIdx !== -1) {
+    // Play via the map node (keeps map state consistent)
+    currentMapNodeIdx = nodeIdx;
+    currentDrawing    = drawing;
+    currentDrawingIdx = DRAWINGS.indexOf(drawing);
+    gameMode          = 'levels';
+    soundNodeTap();
+    loadDrawing();
+  } else {
+    // Drawing is beyond the current map — play directly
+    currentDrawing    = drawing;
+    currentDrawingIdx = DRAWINGS.indexOf(drawing);
+    gameMode          = 'levels';
+    soundNodeTap();
+    loadDrawing();
+  }
+}
+
 function onStoreBuy() {
   // TODO: wire up Google Play Billing (one-time product purchase)
-  // For now: show coming-soon message. Replace with real IAP call when ready.
+  // On success: call onPurchaseComplete() — it sets the flag and reloads the map.
   const msg = document.getElementById('storeMsg');
   if (msg) msg.textContent = 'In-app purchase coming soon. Check back after launch!';
+}
+
+function onPurchaseComplete() {
+  localStorage.setItem(STORE_KEY, '1');
+  if (typeof resetMapSequenceCache === 'function') resetMapSequenceCache();
+  hideStorePage();
+  showLevelMap(); // re-render with full nodes
 }
 
 // Free tier: first 200 levels (nodes 0–199). Full access: all levels.

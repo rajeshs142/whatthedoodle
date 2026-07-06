@@ -26,7 +26,7 @@
 
         <button class="home-btn primary" onclick="onPlayClick()">PLAY</button>
       <button class="home-btn secondary" id="homeDailyBtn" onclick="startDailyMode()">DAILY</button>
-      <button class="home-btn secondary" onclick="showStorePage()">ALL CATEGORIES</button>
+      <button class="home-btn secondary" onclick="hasFullAccess() ? showCategoriesPage() : showStorePage()">ALL CATEGORIES</button>
       <button class="home-btn secondary" onclick="showDoodlesPage()">CREATE MY DOODLE</button>
       <button class="home-btn secondary" onclick="showSettingsPage()">SETTINGS</button>
       </div>
@@ -197,6 +197,20 @@
       <button class="overlay-btn primary" id="doodleNextBtn" onclick="doodleNext()" style="display:none">NEXT</button>
       <button class="overlay-btn primary" id="doodleShareResultBtn" onclick="shareDoodleResult()">SHARE RESULT</button>
       <button class="overlay-btn secondary" onclick="playRealGame()">PLAY GAME</button>
+      <button class="overlay-btn home" onclick="showHome()">HOME</button>
+    </div>
+  </div>
+
+  <!-- PAGE: CATEGORIES -->
+  <div id="page-categories" class="page">
+    <div class="page-header">
+      <span class="page-header-title">CATEGORIES</span>
+    </div>
+    <div class="page-content" style="padding:16px;gap:12px">
+      <div style="font-size:0.65rem;font-weight:700;letter-spacing:2px;color:var(--sub);text-transform:uppercase;text-align:center">Pick a category to play</div>
+      <div id="catPickerGrid" class="cat-picker-grid"></div>
+    </div>
+    <div class="page-footer">
       <button class="overlay-btn home" onclick="showHome()">HOME</button>
     </div>
   </div>

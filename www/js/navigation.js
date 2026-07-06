@@ -1,5 +1,5 @@
 // ── MODAL MANAGEMENT ─────────────────────────────────────────────────────
-const PAGES = ['home', 'levels', 'game', 'result', 'summary', 'doodles', 'create', 'doodle-result', 'settings', 'stats', 'archive'];
+const PAGES = ['home', 'levels', 'game', 'result', 'summary', 'doodles', 'create', 'doodle-result', 'settings', 'stats', 'archive', 'categories'];
 // Pages that replace history (no back entry) vs push (back navigable)
 const _REPLACE_PAGES = new Set(['game', 'result']);
 
@@ -27,7 +27,7 @@ window.addEventListener('popstate', (e) => {
   if (onSettings && _settingsApplied) applyTheme(_settingsApplied.theme);
 
   const target = e.state?.page;
-  const _navigable = ['levels', 'summary', 'doodles', 'settings', 'stats', 'archive', 'create', 'doodle-result'];
+  const _navigable = ['levels', 'summary', 'doodles', 'settings', 'stats', 'archive', 'create', 'doodle-result', 'categories'];
   if (target && _navigable.includes(target)) {
     PAGES.forEach(p => document.getElementById('page-' + p).classList.toggle('active', p === target));
     return;
