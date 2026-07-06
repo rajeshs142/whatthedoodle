@@ -137,15 +137,15 @@ function buildMapSequence() {
 
   if (flatMs) {
     const paid = typeof hasFullAccess === 'function' && hasFullAccess();
-    const MAX_NODES = paid ? DRAWINGS.length : (typeof FREE_LEVEL_LIMIT !== 'undefined' ? FREE_LEVEL_LIMIT : 200);
+    const FREE_LIMIT = typeof FREE_LEVEL_LIMIT !== 'undefined' ? FREE_LEVEL_LIMIT : 200;
     const pool = DRAWINGS.slice(); // already shuffled by CONFIG.seed in shuffleDrawings()
 
-    // Use stored nodes if available, otherwise auto-compute equidistant nodes from path
-    let msNodes = flatMs.nodes && flatMs.nodes.length > 0 ? flatMs.nodes : null;
-    if (!msNodes) {
-      const N = Math.min(pool.length, MAX_NODES);
+    // msNodes drives visual positions in navigation.js via getPos() — it wraps with % so
+    // the actual count of game nodes can exceed msNodes.length (path repeats per lap).
+    // We do NOT cap msNodes to MAX_NODES here — just ensure it's populated for position lookups.
+    if (!flatMs.nodes || flatMs.nodes.length === 0) {
+      const N = Math.min(pool.length, FREE_LIMIT); // always compute at least FREE_LIMIT positions
       const W = 375, H = flatMs.height || 10000;
-      // Denormalize path coords (x×W, y×H) resetting counter at each command letter
       let _ci = 0;
       const denormed = flatMs.path.replace(
         /([MmCcLlZz])|([- ]?[-\d.]+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g,
@@ -162,18 +162,18 @@ function buildMapSequence() {
         svgEl.setAttribute('d', denormed);
         document.body.appendChild(svgEl);
         const total = svgEl.getTotalLength();
-        msNodes = Array.from({ length: N }, (_, i) => {
+        flatMs.nodes = Array.from({ length: N }, (_, i) => {
           const pt = svgEl.getPointAtLength(i / (N - 1) * total);
           return { x: +(pt.x / W).toFixed(4), y: +(pt.y / H).toFixed(4) };
         });
         svgEl.remove();
-        flatMs.nodes = msNodes; // cache so we don't recompute on next call
       } catch(e) {
-        msNodes = [];
+        flatMs.nodes = [];
       }
     }
 
-    const count = Math.min(pool.length, msNodes.length, MAX_NODES);
+    // count = all drawings for paid users, FREE_LIMIT for free users
+    const count = paid ? pool.length : Math.min(pool.length, FREE_LIMIT);
     const sections = [{ category: 'map', drawings: pool.slice(0, count), globalStart: 0, lap: 0 }];
     const nodes = pool.slice(0, count).map((drawing, i) => ({
       drawing, category: drawing.category || 'misc', sectionIdx: 0, posInSection: i
