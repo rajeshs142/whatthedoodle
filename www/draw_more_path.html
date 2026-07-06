@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Map Path Editor 2 — 800 nodes</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  display: flex; height: 100vh; overflow: hidden;
+  background: #111; color: #ccc;
+  font-family: system-ui, sans-serif; font-size: 13px;
+}
+#canvas-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+#canvas-bar {
+  display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+  background: #171717; border-bottom: 1px solid #2a2a2a; flex-shrink: 0; flex-wrap: wrap;
+}
+.bar-label { font-size: 10px; color: #444; letter-spacing: 1.5px; text-transform: uppercase; }
+.bar-sep { width: 1px; height: 18px; background: #2a2a2a; margin: 0 2px; }
+.bar-input { padding: 3px 7px; background: #1e1e1e; border: 1px solid #2e2e2e; color: #ccc; border-radius: 4px; font-size: 12px; width: 70px; }
+#bar-hint { font-size: 10px; color: #3a3; margin-left: 4px; font-style: italic; }
+#node-count { font-size: 11px; font-weight: 700; color: #f0a030; min-width: 80px; }
+#canvas-scroll { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 24px; background: #111; }
+#canvas-wrap { position: relative; flex-shrink: 0; box-shadow: 0 0 0 1px #2a2a2a, 0 8px 40px rgba(0,0,0,0.6); }
+#map-svg { display: block; }
+
+#tools {
+  width: 210px; flex-shrink: 0; background: #171717; border-left: 1px solid #2a2a2a;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.pane { border-bottom: 1px solid #222; padding: 10px 12px; flex-shrink: 0; }
+.pane-title { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #444; margin-bottom: 8px; }
+.tool-btn {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 7px 9px; border-radius: 5px; border: 1px solid #2a2a2a;
+  background: #1e1e1e; color: #888; cursor: pointer; font-size: 11px;
+  font-weight: 600; margin-bottom: 4px; transition: all 0.1s; text-align: left;
+}
+.tool-btn:hover { background: #242424; color: #bbb; }
+.tool-btn.active { background: #1a2a1a; border-color: #3a7a3a; color: #4c4; }
+.tool-icon { font-size: 13px; width: 16px; text-align: center; }
+.prop-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.prop-label { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 1px; width: 32px; flex-shrink: 0; }
+.prop-row input[type=range] { flex: 1; accent-color: #4c4; }
+.prop-val { font-size: 10px; color: #666; width: 30px; text-align: right; }
+#doodle-picker { flex: 1; overflow-y: auto; padding: 8px; display: none; }
+#doodle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.dthumb { background: #1e1e1e; border: 1.5px solid #2a2a2a; border-radius: 5px; padding: 4px; cursor: pointer; text-align: center; transition: border-color 0.1s; }
+.dthumb:hover { border-color: #444; }
+.dthumb.sel { border-color: #4c4; background: #1a2a1a; }
+.dthumb svg { display: block; margin: 0 auto; }
+.dthumb-lbl { font-size: 9px; color: #555; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-btn { width: 100%; padding: 7px; border-radius: 5px; border: 1px solid #2e2e2e; background: #1e1e1e; color: #aaa; cursor: pointer; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; transition: all 0.1s; }
+.act-btn:hover { background: #242424; }
+.act-btn.ok { background: #152515; border-color: #3a7a3a; color: #4c4; }
+.act-btn.ok:hover { background: #1a2e1a; }
+.act-btn.del { border-color: #5a2a2a; color: #c66; }
+.act-btn.del:hover { background: #2a1a1a; }
+</style>
+</head>
+<body>
+
+<div id="canvas-area">
+  <div id="canvas-bar">
+    <span class="bar-label">MAP PATH 2</span>
+    <div class="bar-sep"></div>
+    <span class="bar-label">H</span>
+    <input class="bar-input" type="number" id="inp-height" value="20000" min="5000" max="50000" step="1000"/>
+    <span class="bar-label" style="margin-left:-4px">px</span>
+    <div class="bar-sep"></div>
+    <span class="bar-label">Style</span>
+    <select id="bar-style" onchange="changeStyle(this.value)" style="background:#1e1e1e;border:1px solid #2e2e2e;color:#ccc;border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer">
+      <option value="road">Road</option>
+      <option value="plain">Plain</option>
+      <option value="dash">Dash</option>
+      <option value="pipe">Pipe</option>
+      <option value="rail">Rail</option>
+      <option value="dirt">Dirt</option>
+      <option value="water">Water</option>
+      <option value="lava">Lava</option>
+      <option value="snow">Snow</option>
+    </select>
+    <div class="bar-sep"></div>
+    <span id="node-count">0 / 800 nodes</span>
+    <div class="bar-sep"></div>
+    <span id="bar-hint">Draw path freehand. Each stroke appends.</span>
+  </div>
+  <div id="canvas-scroll">
+    <div id="canvas-wrap">
+      <svg id="map-svg" width="375" height="20000" xmlns="http://www.w3.org/2000/svg">
+        <rect id="svg-bg" width="375" height="20000" fill="#1a1a1a"/>
+        <g id="doodles-layer"></g>
+        <path id="road-shadow" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="road-body"   fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="road-dash"   fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="3"  stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 14"/>
+        <path id="live-path"   fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round"/>
+        <g id="nodes-layer"></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div id="tools">
+  <div class="pane">
+    <div class="pane-title">Tool</div>
+    <button class="tool-btn active" data-tool="path"    onclick="setTool('path')">   <span class="tool-icon">✏️</span> Draw Path</button>
+    <button class="tool-btn"       data-tool="nodes"   onclick="setTool('nodes')">  <span class="tool-icon">⬤</span>  Nodes</button>
+    <button class="tool-btn"       data-tool="doodles" onclick="setTool('doodles')"><span class="tool-icon">🖼</span> Doodles</button>
+  </div>
+
+  <div class="pane" id="pane-sel" style="display:none">
+    <div class="pane-title">Selected Doodle</div>
+    <div class="prop-row">
+      <span class="prop-label">ROT</span>
+      <input type="range" id="sel-rot" min="-180" max="180" value="0" oninput="selProp('rot',+this.value)"/>
+      <span class="prop-val" id="lbl-rot">0°</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-label">SIZE</span>
+      <input type="range" id="sel-size" min="30" max="160" value="70" oninput="selProp('size',+this.value)"/>
+      <span class="prop-val" id="lbl-size">70</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-label">OPQ</span>
+      <input type="range" id="sel-opq" min="0" max="100" value="100" oninput="selProp('opq',+this.value)"/>
+      <span class="prop-val" id="lbl-opq">100%</span>
+    </div>
+    <button class="act-btn del" onclick="delSelDoodle()">Remove</button>
+  </div>
+
+  <div id="doodle-picker">
+    <div class="pane-title" style="padding:8px 8px 4px;border-bottom:1px solid #222;flex-shrink:0">Pick doodle to place</div>
+    <div id="doodle-grid"></div>
+  </div>
+
+  <div style="flex:1"></div>
+
+  <div class="pane">
+    <div class="pane-title">Actions</div>
+    <button class="act-btn ok" onclick="autoGeneratePath()">⚡ Auto Path</button>
+    <button class="act-btn ok" onclick="autoGenNodes()">⬤ Auto Nodes (800)</button>
+    <button class="act-btn ok" onclick="autoPlaceDoodles()">🎨 Auto Doodles</button>
+    <button class="act-btn"   onclick="doUndo()">⟵ Undo</button>
+    <button class="act-btn"   onclick="clearNodes()">Clear Nodes</button>
+    <button class="act-btn"   onclick="clearDoodles()">Clear Doodles</button>
+    <button class="act-btn del" onclick="clearAll()">Clear All</button>
+    <button class="act-btn ok" onclick="doExport()">⬇ Export (map2)</button>
+  </div>
+</div>
+
+<script src="drawings.js"></script>
+<script src="js/config.js"></script>
+<script>
+const REF_W    = 375;
+const TARGET_N = 800;
+const SAVE_KEY = 'gtd_map2_editor';
+
+const PATH_COLOR_DEFAULTS = {
+  road:'#ffffff', plain:'#ffffff', dash:'#ffffff', pipe:'#ffffff',
+  rail:'#cccccc', dirt:'#8B6310', water:'#1565C0', lava:'#D84315', snow:'#ddeeff',
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let state = {
+  height: 20000, pathStyle: 'road', pathD: '', nodes: [], doodles: [],
+};
+let pathHistory  = [];
+let drawing      = false;
+let rawPts       = [];
+let selDoodleId  = null;
+let selDoodleIdx = null;
+let curTool      = 'path';
+
+// ── PERSISTENCE ───────────────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+function load() {
+  try {
+    const r = localStorage.getItem(SAVE_KEY);
+    if (r) state = Object.assign(state, JSON.parse(r));
+  } catch(e) {}
+}
+
+// ── PATH HELPERS ──────────────────────────────────────────────────────────
+function rdp(pts, eps) {
+  if (pts.length <= 2) return pts;
+  let maxD = 0, idx = 0;
+  const a = pts[0], b = pts[pts.length - 1];
+  const dx = b.x-a.x, dy = b.y-a.y, len = Math.sqrt(dx*dx+dy*dy)||1;
+  for (let i = 1; i < pts.length-1; i++) {
+    const d = Math.abs(dy*pts[i].x - dx*pts[i].y + b.x*a.y - b.y*a.x) / len;
+    if (d > maxD) { maxD = d; idx = i; }
+  }
+  if (maxD > eps) {
+    const l = rdp(pts.slice(0, idx+1), eps);
+    const r = rdp(pts.slice(idx), eps);
+    return [...l.slice(0,-1), ...r];
+  }
+  return [a, b];
+}
+function catmullToD(pts, tension=6) {
+  if (pts.length < 2) return '';
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length-1; i++) {
+    const p0 = pts[Math.max(0,i-1)], p1 = pts[i];
+    const p2 = pts[i+1], p3 = pts[Math.min(pts.length-1,i+2)];
+    const c1x = p1.x+(p2.x-p0.x)/tension, c1y = p1.y+(p2.y-p0.y)/tension;
+    const c2x = p2.x-(p3.x-p1.x)/tension, c2y = p2.y-(p3.y-p1.y)/tension;
+    d += ` C ${ri(c1x)} ${ri(c1y)}, ${ri(c2x)} ${ri(c2y)}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+function ri(n) { return Math.round(n); }
+
+// ── ROAD RENDERING ────────────────────────────────────────────────────────
+function buildPathStyle(style) {
+  const c = PATH_COLOR_DEFAULTS[style] || '#ffffff';
+  const styles = {
+    road:  [{ stroke:'rgba(0,0,0,0.55)',       width:18,dash:null},{ stroke:c,width:12,dash:null},{ stroke:'rgba(255,255,255,0.45)',width:3,dash:'10 14'}],
+    plain: [{ stroke:'rgba(0,0,0,0.4)',        width:8, dash:null},{ stroke:c,width:3, dash:null},{ stroke:'none',width:0,dash:null}],
+    dash:  [{ stroke:'rgba(0,0,0,0.4)',        width:8, dash:null},{ stroke:c,width:3, dash:'14 10'},{ stroke:'none',width:0,dash:null}],
+    pipe:  [{ stroke:'rgba(0,0,0,0.70)',       width:22,dash:null},{ stroke:c,width:16,dash:null},{ stroke:'rgba(255,255,255,0.6)',width:8,dash:null}],
+    rail:  [{ stroke:'rgba(50,35,15,0.85)',    width:16,dash:null},{ stroke:'rgba(160,120,60,0.9)',width:10,dash:'3 13'},{ stroke:c,width:2,dash:null}],
+    dirt:  [{ stroke:'rgba(0,0,0,0.65)',       width:18,dash:null},{ stroke:c,width:14,dash:null},{ stroke:'rgba(0,0,0,0.45)',width:8,dash:'3 7'}],
+    water: [{ stroke:'rgba(0,0,0,0.55)',       width:24,dash:null},{ stroke:c,width:18,dash:null},{ stroke:'rgba(255,255,255,0.5)',width:5,dash:'22 10'}],
+    lava:  [{ stroke:'rgba(0,0,0,0.7)',        width:22,dash:null},{ stroke:c,width:16,dash:null},{ stroke:'rgba(255,210,40,0.75)',width:4,dash:null}],
+    snow:  [{ stroke:'rgba(100,140,200,0.4)',  width:20,dash:null},{ stroke:c,width:14,dash:null},{ stroke:'rgba(255,255,255,0.7)',width:4,dash:'4 8'}],
+  };
+  return styles[style] || styles.road;
+}
+
+function setRoad(d) {
+  const cfg = buildPathStyle(state.pathStyle || 'road');
+  ['road-shadow','road-body','road-dash'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.setAttribute('d', d || '');
+    el.setAttribute('stroke', cfg[i].stroke);
+    el.setAttribute('stroke-width', String(cfg[i].width));
+    if (cfg[i].dash) el.setAttribute('stroke-dasharray', cfg[i].dash);
+    else el.removeAttribute('stroke-dasharray');
+  });
+}
+function changeStyle(style) { state.pathStyle = style; save(); setRoad(state.pathD); }
+
+// ── SVG COORDS ────────────────────────────────────────────────────────────
+const mapSvg = document.getElementById('map-svg');
+function svgPt(e) {
+  const cl = e.touches ? e.touches[0] : e;
+  const r  = mapSvg.getBoundingClientRect();
+  const sc = REF_W / r.width;
+  return { x: Math.round((cl.clientX - r.left) * sc),
+           y: Math.round((cl.clientY - r.top)  * sc) };
+}
+
+// ── TOOL SWITCHING ────────────────────────────────────────────────────────
+const HINTS = {
+  path:    'Draw path freehand. Each stroke appends to the road.',
+  nodes:   'Click to add a node (snaps to path). Click existing node to remove.',
+  doodles: 'Pick a doodle → click canvas to place. Drag to reposition.',
+};
+function setTool(tool) {
+  curTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+  document.getElementById('bar-hint').textContent = HINTS[tool] || '';
+  document.getElementById('doodle-picker').style.display = tool === 'doodles' ? '' : 'none';
+  if (tool !== 'doodles') { selDoodleIdx = null; document.getElementById('pane-sel').style.display = 'none'; }
+  mapSvg.style.cursor = tool === 'path' ? 'crosshair' : tool === 'nodes' ? 'cell' : 'default';
+}
+
+// ── NODES ─────────────────────────────────────────────────────────────────
+function snapToRoad(x, y) {
+  const roadEl = document.getElementById('road-body');
+  const total  = roadEl.getTotalLength();
+  if (!total) return {x, y};
+  let best = Infinity, bx = x, by = y;
+  const steps = Math.min(Math.ceil(total / 4), 5000);
+  for (let i = 0; i <= steps; i++) {
+    const pt = roadEl.getPointAtLength(i / steps * total);
+    const d  = (pt.x-x)**2 + (pt.y-y)**2;
+    if (d < best) { best = d; bx = ri(pt.x); by = ri(pt.y); }
+  }
+  return best < 60*60 ? {x:bx,y:by} : {x,y};
+}
+function placeNode(x, y) {
+  state.nodes.push(snapToRoad(x, y));
+  save(); renderNodes();
+}
+function removeNode(i) { state.nodes.splice(i, 1); save(); renderNodes(); }
+
+function renderNodes() {
+  const layer = document.getElementById('nodes-layer');
+  layer.innerHTML = state.nodes.map((n, i) =>
+    `<g transform="translate(${n.x},${n.y})" data-ni="${i}" style="cursor:pointer">
+      <circle r="14" fill="#f0a030" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+      <text text-anchor="middle" dominant-baseline="central" fill="#111"
+            font-size="8" font-weight="700" font-family="system-ui">${i+1}</text>
+    </g>`
+  ).join('');
+  layer.onclick = e => {
+    const g = e.target.closest('g[data-ni]');
+    if (!g) return;
+    e.stopPropagation();
+    removeNode(+g.dataset.ni);
+  };
+  document.getElementById('node-count').textContent = `${state.nodes.length} / ${TARGET_N} nodes`;
+  const nc = document.getElementById('node-count');
+  nc.style.color = state.nodes.length >= TARGET_N ? '#4c4' : '#f0a030';
+}
+
+// ── DOODLES ───────────────────────────────────────────────────────────────
+const MAP_DOODLE_WORDS = new Set([
+  'airplane','apple','axe','backpack','banana','barn','baseball','basketball',
+  'bat','bathtub','bear','bed','bee','belt','bench','bicycle','bird',
+  'birthday cake','book','bowtie','brain','bread','bridge','broccoli','broom',
+  'bucket','bulldozer','bus','butterfly','cactus','cake','calculator','camel',
+  'camera','campfire','candle','cannon','canoe','car','carrot','castle','cat',
+  'ceiling fan','cell phone','chair','church','circle','clock','cloud',
+  'coffee cup','compass','computer','cookie','couch','cow','crab','crayon',
+  'crocodile','crown','cruise ship','cup','diamond','dog','dolphin','donut',
+  'door','dragon','dresser','drill','drums','duck','dumbbell','elephant',
+  'envelope','eye','eyeglasses','fan','feather','fence','fire hydrant',
+  'fireplace','firetruck','fish','flamingo','flashlight','flower',
+  'flying saucer','fork','frog','frying pan','giraffe','guitar','hamburger',
+  'hammer','hand','hat','headphones','helicopter','helmet','hexagon',
+  'horse','hospital','hot air balloon','hot dog','hourglass','house',
+  'house plant','ice cream','jacket','kangaroo','key','keyboard','knife',
+  'ladder','lantern','laptop','leaf','light bulb','lighthouse','lightning',
+  'lion','lobster','lollipop','mailbox','map','marker','megaphone','mermaid',
+  'microphone','microwave','monkey','moon','motorbike','mountain','mouse',
+  'mug','mushroom','nail','necklace','ocean','octopus','onion','oven','owl',
+  'paintbrush','palm tree','panda','pants','parachute','parrot','pear',
+  'pencil','penguin','piano','pickup truck','picture frame','pig','pillow',
+  'pineapple','pizza','police car','popsicle','potato','rabbit','radio',
+  'rain','rainbow','rake','remote control','rhinoceros','river',
+  'roller coaster','sailboat','sandwich','saw','saxophone','school bus',
+  'scissors','scorpion','screwdriver','sea turtle','shark','sheep','shoe',
+  'shovel','sink','skateboard','skull','snail','snake','snowflake','snowman',
+  'soccer ball','sock','speedboat','spider','spoon','squirrel','star',
+  'steak','stop sign','stove','strawberry','streetlight','submarine',
+  'suitcase','sun','swan','sweater','swing set','sword','table','teapot',
+  'teddy-bear','telephone','television','tennis racquet','tent','tiger',
+  'toaster','toilet','tooth','toothbrush','tornado','tractor','traffic light',
+  'train','tree','triangle','truck','t-shirt','umbrella','van','vase',
+  'violin','watermelon','whale','windmill','wine glass','zebra',
+]);
+
+function buildDoodleGrid() {
+  const grid = document.getElementById('doodle-grid');
+  grid.innerHTML = '';
+  if (typeof DRAWINGS === 'undefined') return;
+  const pool = DRAWINGS.filter(d => MAP_DOODLE_WORDS.has(d.word)).sort((a,b) => a.word.localeCompare(b.word));
+  pool.forEach(d => {
+    const paths = d.strokes.map(s =>
+      `<path d="${s}" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`
+    ).join('');
+    const div = document.createElement('div');
+    div.className = 'dthumb' + (d.id === selDoodleId ? ' sel' : '');
+    div.dataset.id = d.id;
+    div.innerHTML = `<svg viewBox="0 0 255 255" width="76" height="76" color="#bbb">${paths}</svg>
+                     <div class="dthumb-lbl">${d.word}</div>`;
+    div.onclick = () => {
+      document.querySelectorAll('.dthumb').forEach(el => el.classList.remove('sel'));
+      div.classList.add('sel');
+      selDoodleId = d.id;
+    };
+    grid.appendChild(div);
+  });
+}
+
+function placeDoodle(x, y) {
+  if (!selDoodleId) { document.getElementById('bar-hint').textContent = '← pick a doodle first'; return; }
+  state.doodles.push({ id: selDoodleId, x, y, rot: 0, size: Math.round(40 + Math.random()*90), strokeW: 5, opq: 100 });
+  save(); renderDoodles();
+}
+
+function renderDoodles() {
+  const layer = document.getElementById('doodles-layer');
+  layer.innerHTML = '';
+  if (typeof DRAWINGS === 'undefined') return;
+  state.doodles.forEach((dd, i) => {
+    const drw = DRAWINGS.find(d => d.id === dd.id);
+    if (!drw) return;
+    const paths = drw.strokes.map(s =>
+      `<path d="${s}" fill="none" stroke="#ffffff" stroke-width="${dd.strokeW||5}" stroke-linecap="round" stroke-linejoin="round"/>`
+    ).join('');
+    const sc = dd.size / 255;
+    const g  = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('opacity', dd.opq / 100);
+    g.setAttribute('transform', `translate(${dd.x},${dd.y}) rotate(${dd.rot}) scale(${sc}) translate(-127.5,-127.5)`);
+    g.innerHTML = paths;
+    if (curTool === 'doodles' && selDoodleIdx === i) {
+      const hw = dd.size/2+6;
+      const hl = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      hl.setAttribute('x',-hw); hl.setAttribute('y',-hw);
+      hl.setAttribute('width',hw*2); hl.setAttribute('height',hw*2);
+      hl.setAttribute('fill','none'); hl.setAttribute('stroke','#4c4');
+      hl.setAttribute('stroke-width','1.5'); hl.setAttribute('stroke-dasharray','4 3');
+      hl.setAttribute('transform',`translate(${dd.x},${dd.y}) rotate(${dd.rot})`);
+      layer.appendChild(hl);
+    }
+    g.style.cursor = curTool === 'doodles' ? 'move' : 'default';
+    g.addEventListener('click', e => {
+      if (curTool !== 'doodles') return;
+      e.stopPropagation();
+      selDoodleIdx = i;
+      document.getElementById('sel-rot').value = dd.rot;
+      document.getElementById('lbl-rot').textContent = dd.rot + '°';
+      document.getElementById('sel-size').value = dd.size;
+      document.getElementById('lbl-size').textContent = dd.size;
+      document.getElementById('sel-opq').value = dd.opq;
+      document.getElementById('lbl-opq').textContent = dd.opq + '%';
+      document.getElementById('pane-sel').style.display = '';
+      renderDoodles();
+    });
+    g.addEventListener('mousedown', e => {
+      if (curTool !== 'doodles') return;
+      e.stopPropagation();
+      selDoodleIdx = i;
+      const orig = {x: dd.x, y: dd.y}, start = svgPt(e);
+      const onMove = ev => { const c = svgPt(ev); dd.x = orig.x+c.x-start.x; dd.y = orig.y+c.y-start.y; renderDoodles(); };
+      const onUp   = () => { save(); window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
+      window.addEventListener('mousemove',onMove);
+      window.addEventListener('mouseup',onUp);
+    });
+    layer.appendChild(g);
+  });
+}
+
+function selProp(prop, val) {
+  if (selDoodleIdx === null) return;
+  const dd = state.doodles[selDoodleIdx];
+  if (!dd) return;
+  dd[prop] = val;
+  document.getElementById('lbl-rot').textContent  = dd.rot  + '°';
+  document.getElementById('lbl-size').textContent  = dd.size;
+  document.getElementById('lbl-opq').textContent   = dd.opq  + '%';
+  save(); renderDoodles();
+}
+function delSelDoodle() {
+  if (selDoodleIdx === null) return;
+  state.doodles.splice(selDoodleIdx, 1);
+  selDoodleIdx = null;
+  document.getElementById('pane-sel').style.display = 'none';
+  save(); renderDoodles();
+}
+
+// ── CANVAS EVENTS ─────────────────────────────────────────────────────────
+mapSvg.addEventListener('mousedown', e => {
+  if (e.target.closest('#nodes-layer,#doodles-layer')) return;
+  if (curTool !== 'path') return;
+  drawing = true; rawPts = [svgPt(e)];
+  document.getElementById('live-path').setAttribute('d', `M ${rawPts[0].x} ${rawPts[0].y}`);
+});
+mapSvg.addEventListener('mousemove', e => {
+  if (!drawing) return;
+  const pt = svgPt(e), last = rawPts[rawPts.length-1];
+  if (Math.abs(pt.x-last.x)>2||Math.abs(pt.y-last.y)>2) {
+    rawPts.push(pt);
+    document.getElementById('live-path').setAttribute('d','M '+rawPts.map(p=>`${p.x} ${p.y}`).join(' L '));
+  }
+});
+window.addEventListener('mouseup', () => {
+  if (!drawing) return;
+  drawing = false;
+  document.getElementById('live-path').setAttribute('d','');
+  if (rawPts.length < 2) return;
+  const seg = catmullToD(rdp(rawPts, 4));
+  pathHistory.push(state.pathD);
+  if (pathHistory.length > 30) pathHistory.shift();
+  state.pathD = state.pathD ? state.pathD + ' ' + seg : seg;
+  save(); setRoad(state.pathD);
+});
+mapSvg.addEventListener('click', e => {
+  if (e.target.closest('#nodes-layer')) return;
+  if (e.target.closest('#doodles-layer') && curTool === 'doodles') return;
+  const pt = svgPt(e);
+  if (curTool === 'nodes')   placeNode(pt.x, pt.y);
+  if (curTool === 'doodles') { selDoodleIdx = null; placeDoodle(pt.x, pt.y); }
+});
+mapSvg.addEventListener('touchstart', e => {
+  const pt = svgPt(e);
+  if (curTool === 'path')    { drawing = true; rawPts = [pt]; }
+  if (curTool === 'nodes')   placeNode(pt.x, pt.y);
+  if (curTool === 'doodles') placeDoodle(pt.x, pt.y);
+}, {passive:true});
+mapSvg.addEventListener('touchmove', e => {
+  if (!drawing) return;
+  const pt = svgPt(e), last = rawPts[rawPts.length-1];
+  if (Math.abs(pt.x-last.x)>2||Math.abs(pt.y-last.y)>2) rawPts.push(pt);
+  document.getElementById('live-path').setAttribute('d','M '+rawPts.map(p=>`${p.x} ${p.y}`).join(' L '));
+}, {passive:true});
+mapSvg.addEventListener('touchend', e => {
+  if (!drawing) return;
+  drawing = false;
+  document.getElementById('live-path').setAttribute('d','');
+  if (rawPts.length < 2) return;
+  const seg = catmullToD(rdp(rawPts, 4));
+  pathHistory.push(state.pathD);
+  state.pathD = state.pathD ? state.pathD + ' ' + seg : seg;
+  save(); setRoad(state.pathD);
+}, {passive:true});
+
+// ── HEIGHT INPUT ──────────────────────────────────────────────────────────
+document.getElementById('inp-height').addEventListener('change', function() {
+  state.height = Math.max(5000, Math.min(50000, +this.value));
+  mapSvg.setAttribute('height', state.height);
+  document.getElementById('svg-bg').setAttribute('height', state.height);
+  save();
+});
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+function doUndo() {
+  if (!pathHistory.length) return;
+  state.pathD = pathHistory.pop();
+  save(); setRoad(state.pathD);
+}
+function clearNodes()  { state.nodes=[]; save(); renderNodes(); }
+function clearDoodles(){ state.doodles=[]; save(); renderDoodles(); }
+function clearAll()    {
+  if (!confirm('Clear everything on this path? (existing map path in draw_map.html is unaffected)')) return;
+  state = { height: state.height, pathStyle: state.pathStyle, pathD:'', nodes:[], doodles:[] };
+  pathHistory = [];
+  save(); setRoad(''); renderNodes(); renderDoodles();
+}
+
+function autoGeneratePath() {
+  const H = state.height, W = REF_W, M = 22;
+  let seed = 42;
+  const rnd = () => { seed^=seed<<13;seed^=seed>>17;seed^=seed<<5;return(seed>>>0)/4294967296; };
+  const rndI = (lo,hi) => Math.round(lo+rnd()*(hi-lo));
+  const rndF = (lo,hi) => lo+rnd()*(hi-lo);
+  const L = W - M;
+  const r = Math.round;
+
+  const shapes = {
+    S: (x0,y0,x1,y1) => { const bulge=rndF(0.25,0.55)*(L-M); const cx2=x1<W/2?M+bulge*0.1:L-bulge*0.1; return `C ${r(x0<W/2?M+bulge*0.9:L-bulge*0.9)} ${r(y0+rndF(10,30))}, ${r(cx2)} ${r(y1-rndF(10,30))}, ${r(x1)} ${r(y1)}`; },
+    C: (x0,y0,x1,y1) => { const dir=rnd()>0.5?1:-1,pull=rndF(0.55,0.9)*(L-M); const cx=dir>0?Math.min(L,(x0+x1)/2+pull):Math.max(M,(x0+x1)/2-pull); return `C ${r(cx)} ${r(y0+rndF(20,50))}, ${r(cx)} ${r(y1-rndF(20,50))}, ${r(x1)} ${r(y1)}`; },
+    Z: (x0,y0,x1,y1) => { const gl=x1>W/2,m1x=gl?rndI(M,M+80):rndI(L-80,L),m2x=gl?rndI(L-80,L):rndI(M,M+80),h3=(y1-y0)/3; return `C ${r(m1x)} ${r(y0+h3*0.3)}, ${r(m1x)} ${r(y0+h3)}, ${r((x0+m2x)/2)} ${r(y0+h3*1.5)} S ${r(m2x)} ${r(y1-h3*0.4)}, ${r(x1)} ${r(y1)}`; },
+    N: (x0,y0,x1,y1) => { const h=(y1-y0),px=x0<W/2?rndI(L-80,L):rndI(M,M+80); return `C ${r(x0)} ${r(y0+h*0.15)}, ${r(px)} ${r(y0+h*0.25)}, ${r(px)} ${r(y0+h*0.5)} C ${r(px)} ${r(y0+h*0.75)}, ${r(x1)} ${r(y1-h*0.15)}, ${r(x1)} ${r(y1)}`; },
+    U: (x0,y0,x1,y1) => { const gr=rnd()>0.5,ex=gr?rndI(L-30,L):rndI(M,M+30),h=(y1-y0); return `C ${r(ex)} ${r(y0+h*0.1)}, ${r(ex)} ${r(y0+h*0.6)}, ${r((x0+x1)/2+rndF(-40,40))} ${r(y0+h*0.65)} C ${r(gr?M:L)} ${r(y0+h*0.7)}, ${r(x1+rndF(-30,30))} ${r(y1-h*0.1)}, ${r(x1)} ${r(y1)}`; },
+  };
+  const shapeKeys = Object.keys(shapes);
+  const segH = Math.max(200, Math.round(H / 20));
+  let segs = [], cx = rndI(M+40, L-40), cy = H - M;
+  segs.push(`M ${cx} ${cy}`);
+  while (cy > M + segH * 0.4) {
+    const nextH = rndI(segH*0.7, segH*1.3);
+    const nextY = Math.max(M, cy - nextH);
+    const nextX = cy-nextY > 100 ? (cx<W/2?rndI(W*0.52,L-M):rndI(M,W*0.48)) : rndI(M+30,L-30);
+    segs.push(shapes[shapeKeys[Math.floor(rnd()*shapeKeys.length)]](cx,cy,nextX,nextY));
+    cx=nextX; cy=nextY;
+  }
+  const d = segs.join(' ');
+  pathHistory.push(state.pathD);
+  state.pathD = d;
+  save(); setRoad(d);
+}
+
+function autoGenNodes() {
+  if (!state.pathD) { alert('Draw or auto-generate a path first.'); return; }
+  requestAnimationFrame(() => {
+    const roadEl = document.getElementById('road-body');
+    const total  = roadEl.getTotalLength();
+    if (!total) return;
+    state.nodes = Array.from({ length: TARGET_N }, (_, i) => {
+      const pt = roadEl.getPointAtLength(i / (TARGET_N - 1) * total);
+      return { x: Math.round(pt.x), y: Math.round(pt.y) };
+    });
+    save(); renderNodes();
+    alert(`✓ Placed ${TARGET_N} nodes along the path.`);
+  });
+}
+
+function autoPlaceDoodles() {
+  if (!state.nodes.length) { alert('Generate nodes first.'); return; }
+  const pool = typeof DRAWINGS !== 'undefined'
+    ? DRAWINGS.filter(d => MAP_DOODLE_WORDS.has(d.word))
+    : [];
+  if (!pool.length) { alert('No drawings loaded.'); return; }
+  let seed = 123;
+  const rnd = () => { seed^=seed<<13;seed^=seed>>17;seed^=seed<<5;return(seed>>>0)/4294967296; };
+  const rndR = (lo,hi) => lo+rnd()*(hi-lo);
+  const shuffled = pool.slice();
+  for (let i = shuffled.length-1; i>0; i--) { const j=Math.floor(rnd()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+  const COLORS = ['#ff6b6b','#ff9f43','#ffd32a','#0be881','#67e8f9','#a29bfe','#fd79a8','#fdcb6e','#55efc4','#74b9ff','#e17055','#00cec9','#6c5ce7','#fab1a0','#81ecec','#ffffff','#dfe6e9','#b2bec3'];
+  state.doodles = state.nodes.map((n, i) => ({
+    id:     shuffled[i % shuffled.length].id,
+    x:      Math.max(10, Math.min(REF_W-10, n.x + Math.round(rndR(-70,70)))),
+    y:      Math.max(10, Math.min(state.height-10, n.y + Math.round(rndR(-70,70)))),
+    rot:    Math.round(rndR(-45,45)),
+    size:   Math.round(rndR(30,90)),
+    strokeW: Math.round(rndR(3,6)),
+    opq:    Math.round(rndR(20,55)),
+    color:  COLORS[Math.floor(rnd()*COLORS.length)],
+  }));
+  save(); renderDoodles();
+  alert(`✓ Placed ${state.doodles.length} doodles.`);
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function normPath(d, H) {
+  let idx = 0;
+  return d.replace(/([MmCcLlZz])|([- ]?[-\d.]+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g, (match, cmd, num) => {
+    if (cmd) { idx = 0; return cmd; }
+    const v = parseFloat(num);
+    const scaled = idx%2===0 ? +(v/REF_W).toFixed(4) : +(v/state.height).toFixed(4);
+    idx++;
+    return (num[0]===' '?' ':'')+scaled;
+  });
+}
+
+function doExport() {
+  if (!state.pathD) { alert('Nothing to export — draw a path first.'); return; }
+  const H  = state.height;
+  const np = normPath(state.pathD, H);
+  const nn = state.nodes.map(n => ({ x: +(n.x/REF_W).toFixed(4), y: +(n.y/H).toFixed(4) }));
+  const nd = state.doodles.map(d => ({
+    id: d.id, x: +(d.x/REF_W).toFixed(4), y: +(d.y/H).toFixed(4),
+    rot: d.rot, size: d.size, strokeW: d.strokeW||5, opq: d.opq, color: d.color||'#ffffff',
+  }));
+
+  const code =
+`// Generated by draw_more_path.html — ADD this entry to js/map_sections.js
+// (keep the existing 'map' entry, add this as a second entry with category:'map2')
+  { category:"map2", gradFrom:"#1a1a1a", gradTo:"#1a1a1a", height:${H}, pathStyle:${JSON.stringify(state.pathStyle||'road')}, pathColor:null,
+    path:${JSON.stringify(np)},
+    nodes:${JSON.stringify(nn)},
+    doodles:${JSON.stringify(nd)} }`;
+
+  navigator.clipboard.writeText(code).then(() => {
+    alert(`✓ Copied!\n${state.nodes.length} nodes, ${state.doodles.length} doodles.\n\nPaste this entry into MAP_SECTIONS array in js/map_sections.js — keep the existing 'map' entry and add this as a second entry.`);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    Object.assign(ta.style, { position:'fixed',top:'10px',left:'50%',transform:'translateX(-50%)',width:'80vw',height:'70vh',zIndex:'9999',background:'#1a1a1a',color:'#ccc',padding:'12px',border:'1px solid #444',borderRadius:'8px',fontSize:'11px' });
+    document.body.appendChild(ta);
+    ta.select();
+    ta.addEventListener('blur', () => ta.remove());
+  });
+}
+
+// ── KEYBOARD ──────────────────────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key==='z') doUndo();
+  if (e.key==='p') setTool('path');
+  if (e.key==='n') setTool('nodes');
+  if (e.key==='d') setTool('doodles');
+  if (e.key==='Delete' && selDoodleIdx!==null) delSelDoodle();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+load();
+mapSvg.setAttribute('height', state.height);
+document.getElementById('svg-bg').setAttribute('height', state.height);
+document.getElementById('inp-height').value = state.height;
+document.getElementById('bar-style').value  = state.pathStyle || 'road';
+setRoad(state.pathD);
+renderNodes();
+renderDoodles();
+buildDoodleGrid();
+setTool('path');
+// Scroll to bottom on load (path starts at bottom)
+requestAnimationFrame(() => { document.getElementById('canvas-scroll').scrollTop = 999999; });
+</script>
+</body>
+</html>

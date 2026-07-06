@@ -131,8 +131,10 @@ function buildMapSequence() {
   if (_mapSequence) return _mapSequence;
 
   // ── Flat single-path mode ─────────────────────────────────────────────────
+  // Prefer 'map2' (800-node path) over 'map' (200-node path) when available
   const flatMs = (typeof MAP_SECTIONS !== 'undefined')
-    ? MAP_SECTIONS.find(ms => ms.category === 'map' && ms.path)
+    ? (MAP_SECTIONS.find(ms => ms.category === 'map2' && ms.path) ||
+       MAP_SECTIONS.find(ms => ms.category === 'map'  && ms.path))
     : null;
 
   if (flatMs) {
