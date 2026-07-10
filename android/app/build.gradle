@@ -13,13 +13,13 @@ android {
         applicationId "com.rajeshs142.whatthedoodle"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.1"
+        versionCode 3
+        versionName "1.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!screenshots:!whatthedoodle:!well-known:!doodle_manager.html:!draw_map.html:!draw_more_path.html:!draw_words.html:!feature_graphic.html:!scribblio_word_list.txt:!ph.jpg:!wtd1.png:!wtd2.png:!whatthedoodle_feature_graphic.png'
         }
     }
     signingConfigs {
