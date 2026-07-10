@@ -13,6 +13,8 @@ function buildKeyboard() {
       const btn = document.createElement('button');
       btn.className = 'key';
       btn.textContent = k;
+      btn.setAttribute('aria-label', k);
+      btn.setAttribute('tabindex', '-1'); // keyboard handled via on-screen tap; physical keyboard works natively
       btn.addEventListener('click', () => {
         const inp = document.getElementById('guessInput');
         if (inp.value.length < 30) inp.value += k;
@@ -27,15 +29,17 @@ function buildKeyboard() {
   const spaceRow = document.createElement('div');
   spaceRow.className = 'kb-row';
   const spaceKeys = [
-    { label: 'CLR',   action: inp => { inp.value = ''; }, sugg: true },
-    { label: 'SPACE', action: inp => { if (inp.value.length < 30) inp.value += ' '; }, flex: 2, sugg: true },
-    { label: 'ENTER', action: () => submitGuess() },
-    { label: '⌫',     action: inp => { inp.value = inp.value.slice(0, -1); }, sugg: true },
+    { label: 'CLR',   ariaLabel: 'Clear',     action: inp => { inp.value = ''; }, sugg: true },
+    { label: 'SPACE', ariaLabel: 'Space',     action: inp => { if (inp.value.length < 30) inp.value += ' '; }, flex: 2, sugg: true },
+    { label: 'ENTER', ariaLabel: 'Submit',    action: () => submitGuess() },
+    { label: '⌫',     ariaLabel: 'Backspace', action: inp => { inp.value = inp.value.slice(0, -1); }, sugg: true },
   ];
-  spaceKeys.forEach(({ label, action, flex, sugg }) => {
+  spaceKeys.forEach(({ label, ariaLabel, action, flex, sugg }) => {
     const btn = document.createElement('button');
     btn.className = 'key wide';
     btn.textContent = label;
+    btn.setAttribute('aria-label', ariaLabel || label);
+    btn.setAttribute('tabindex', '-1');
     if (flex) btn.style.cssText = `max-width:none; flex:${flex};`;
     btn.addEventListener('click', () => {
       const inp = document.getElementById('guessInput');

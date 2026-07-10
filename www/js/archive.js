@@ -15,7 +15,9 @@ let calFilter = 'all';
 function setCalFilter(f) {
   calFilter = f;
   document.querySelectorAll('.cal-filter').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === f);
+    const active = btn.dataset.filter === f;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
   buildCalendarGrid();
 }
@@ -39,6 +41,8 @@ function buildCalendarGrid() {
 
     const row = document.createElement('div');
     row.className = 'cal-row' + (d === today ? ' today' : '');
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
 
     const startDate = new Date(CONFIG.startDate + 'T00:00:00');
     startDate.setDate(startDate.getDate() + d);
@@ -72,7 +76,10 @@ function buildCalendarGrid() {
     row.appendChild(dateDiv);
     row.appendChild(dotsDiv);
     row.appendChild(scoreDiv);
+    const playedText = played > 0 ? `${total} pts, ${played} of ${CONFIG.gamesPerDay} played` : 'not played';
+    row.setAttribute('aria-label', `${dateStr}: ${playedText}`);
     row.addEventListener('click', () => playDay(d));
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playDay(d); } });
     body.appendChild(row);
   }
   if (shown === 0) {

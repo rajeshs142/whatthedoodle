@@ -4,7 +4,12 @@ const PAGES = ['home', 'levels', 'game', 'result', 'summary', 'doodles', 'create
 const _REPLACE_PAGES = new Set(['game', 'result']);
 
 function showPage(name) {
-  PAGES.forEach(p => document.getElementById('page-' + p).classList.toggle('active', p === name));
+  PAGES.forEach(p => {
+    const el = document.getElementById('page-' + p);
+    const active = p === name;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-hidden', active ? 'false' : 'true');
+  });
   document.getElementById('shareSheet').classList.remove('show');
   if (name === 'home' || _REPLACE_PAGES.has(name)) {
     history.replaceState({page: name}, '');
@@ -17,7 +22,9 @@ window.addEventListener('popstate', (e) => {
   const onSettings = document.getElementById('page-settings').classList.contains('active');
   if (onSettings && isSettingsDirty()) {
     history.pushState({page: 'settings'}, '');
-    document.getElementById('settingsExitPrompt').style.display = 'flex';
+    const ep = document.getElementById('settingsExitPrompt');
+    ep.style.display = 'flex';
+    requestAnimationFrame(() => { const f = ep.querySelector('button'); if (f) f.focus(); });
     return;
   }
   animGeneration++;
@@ -35,7 +42,37 @@ window.addEventListener('popstate', (e) => {
   showHome();
 });
 
-function closeAllModals() {}
+function closeAllModals() {
+  // Close share sheet
+  const sheet = document.getElementById('shareSheet');
+  if (sheet && sheet.classList.contains('show')) { sheet.classList.remove('show'); return true; }
+  // Close store overlay
+  const store = document.getElementById('storeOverlay');
+  if (store && store.style.display !== 'none' && store.style.display !== '') { store.style.display = 'none'; return true; }
+  // Close settings exit prompt
+  const exitPrompt = document.getElementById('settingsExitPrompt');
+  if (exitPrompt && exitPrompt.style.display === 'flex') { exitPrompt.style.display = 'none'; return true; }
+  // Close any open custom dropdowns
+  const openDropdown = document.querySelector('.cfg-custom-select.open');
+  if (openDropdown) {
+    openDropdown.classList.remove('open');
+    openDropdown.setAttribute('aria-expanded', 'false');
+    return true;
+  }
+  return false;
+}
+
+// Global Escape key handler
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (closeAllModals()) return;
+    // On non-home pages, Escape = go back
+    const activePage = PAGES.find(p => document.getElementById('page-' + p).classList.contains('active'));
+    if (activePage && activePage !== 'home' && activePage !== 'game') {
+      history.back();
+    }
+  }
+});
 
 function showHome() {
   gameMode = 'levels';
@@ -254,27 +291,38 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
     const visibleCount = paid
       ? _getRevealCeiling(currentMapNodeIdx, nodes.length)
       : Math.min(nodes.length, FREE_LIMIT);
-    const showFade = paid && visibleCount < nodes.length;
+    // Only show top fade once the player has progressed past the initial reveal window
+    // (i.e. there are faded nodes above that are actually above the scroll viewport)
+    const showFade = paid && visibleCount < nodes.length && currentMapNodeIdx >= MAP_INITIAL_REVEAL;
 
     const msNodeCount = sectionMeta[0]?.ms?.nodes?.length || nodes.length;
-    // Lap 0 sits at the bottom. Each extra lap extends upward by totalH (negative Y coords).
-    // We shift all child elements down by extraLaps*totalH so lap 0 stays at the bottom
-    // and higher laps fill in above it within the container.
-    const revealLaps = Math.ceil(visibleCount / msNodeCount);
-    _lapCount = Math.ceil(nodes.length / msNodeCount);
-    const extraLaps = revealLaps - 1;
+    // Free users: only 1 lap (visibleCount nodes). Paid: all laps needed for full node count.
+    _lapCount = paid ? Math.ceil(nodes.length / msNodeCount) : 1;
+    const extraLaps = _lapCount - 1;
     const yShift    = extraLaps * totalH;
-    pathEl.style.height    = (totalH * revealLaps) + 'px';
+
+    // Size container based on topmost VISIBLE node (visibleCount ceiling).
+    // Faded nodes above it are rendered but may overflow — that's fine, they're clipped by scroll.
+    let topVisibleRawY = 0;
+    for (let i = Math.min(visibleCount, nodes.length) - 1; i >= 0; i--) {
+      const p = getPos(i);
+      if (p) { topVisibleRawY = p.y; break; }
+    }
+    const bottomRawY = (getPos(0)?.y ?? totalH) + BUBBLE / 2;
+    const MAP_REVEAL_PAD = paid ? 300 : 40;
+    const domOffset  = -(topVisibleRawY + yShift) + MAP_REVEAL_PAD;
+    const finalH     = (bottomRawY + yShift + domOffset) + 8;
+    pathEl.style.height    = Math.max(200, finalH) + 'px';
     pathEl.style.marginTop = '0';
     pathEl.style.setProperty('--node-color', THEME_NODE_COLORS[CONFIG.theme] || '#ffffff');
 
     const _lightThemes = new Set(['light', 'sepia', 'ocean']);
 
-    for (let lap = 0; lap < revealLaps; lap++) {
+    for (let lap = 0; lap < _lapCount; lap++) {
     const lapOffsetY = lap * totalH;
     sectionMeta.forEach((m, sIdx) => {
       if (!m.ms || !m.height) return;
-      const topY    = sTopY[sIdx] - lapOffsetY + yShift;
+      const topY    = sTopY[sIdx] - lapOffsetY + yShift + domOffset;
       const H       = m.height;
       const unlocked = isSectionUnlocked(sIdx);
 
@@ -448,15 +496,15 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
     });
 
     // ── Bubble nodes (z-index 2) ─────────────────────────────────────────
-    const renderUpTo = Math.min(visibleCount, maxValidIdx + 1);
     nodes.forEach((node, i) => {
-      if (i >= renderUpTo) return;
+      if (i > maxValidIdx) return;
       const c = getPos(i);
       if (!c) return;
       const { drawing, sectionIdx } = node;
+      const faded     = i >= visibleCount; // above the reveal ceiling
       const starCount = s[drawing.id];
       const played    = starCount !== undefined;
-      const playable  = isNodePlayable(i, nodes, s);
+      const playable  = !faded && isNodePlayable(i, nodes, s);
       const nodeTheme = WORLD_THEMES[sections[sectionIdx]?.category] || WORLD_THEMES.misc;
       const sectionColor = CONFIG.mapNodeColor === 'section' ? nodeTheme.color
                          : CONFIG.mapNodeColor !== 'theme'   ? CONFIG.mapNodeColor
@@ -473,13 +521,8 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
         cls   = 'node-start';
         inner = `<div class="node-inner">${numLbl}<span class="node-tag">START</span></div>`;
       } else if (isEnd) {
-        if (paid) {
-          cls   = 'node-end';
-          inner = `<div class="node-inner">${numLbl}<span class="node-tag">END</span></div>`;
-        } else {
-          cls   = 'node-more';
-          inner = `<div class="node-inner"><span class="node-play">+</span><span class="node-tag">MORE</span></div>`;
-        }
+        cls   = 'node-end';
+        inner = `<div class="node-inner">${numLbl}<span class="node-tag">END</span></div>`;
       } else if (played) {
         cls   = 'node-played';
         inner = `<div class="node-inner">${numLbl}<span class="node-stars">${'★'.repeat(starCount)}<span class="star-off">${'☆'.repeat(3 - starCount)}</span></span></div>`;
@@ -493,29 +536,47 @@ function _showLevelMapFromSections(nodes, sections, s, scrollEl, pathEl) {
 
       const bubble = document.createElement('div');
       bubble.className = `level-bubble map-node map-node--${node.sectionIdx < sections.length ? sections[node.sectionIdx].category : 'misc'} ${cls}`;
-      bubble.style.cssText = `left:${c.x - BUBBLE/2 + offsetX}px;top:${c.y - BUBBLE/2 + yShift}px;z-index:2;`;
+      bubble.style.cssText = `left:${c.x - BUBBLE/2 + offsetX}px;top:${c.y - BUBBLE/2 + yShift + domOffset}px;z-index:2;` +
+        (faded ? 'opacity:0.8;pointer-events:none;' : '');
       if (sectionColor) bubble.style.setProperty('--node-color', sectionColor);
       bubble.innerHTML = inner;
-      if (played)          bubble.addEventListener('click', () => showLevelPreview(i));
-      else if (isEnd && !paid) bubble.addEventListener('click', () => showStorePage());
-      else if (playable)   bubble.addEventListener('click', () => playMapNode(i));
+      // Accessibility
+      const catLabel = node.sectionIdx < sections.length ? sections[node.sectionIdx].category : 'misc';
+      if (!faded) {
+        if (played) {
+          bubble.setAttribute('role', 'button');
+          bubble.setAttribute('tabindex', '0');
+          bubble.setAttribute('aria-label', `Level ${i + 1} (${catLabel}), ${starCount} star${starCount !== 1 ? 's' : ''}, played`);
+          bubble.addEventListener('click', () => showLevelPreview(i));
+          bubble.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showLevelPreview(i); } });
+        } else if (playable) {
+          bubble.setAttribute('role', 'button');
+          bubble.setAttribute('tabindex', '0');
+          bubble.setAttribute('aria-label', `Level ${i + 1} (${catLabel}), play`);
+          bubble.addEventListener('click', () => playMapNode(i));
+          bubble.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playMapNode(i); } });
+        } else {
+          bubble.setAttribute('role', 'button');
+          bubble.setAttribute('tabindex', '-1');
+          bubble.setAttribute('aria-label', `Level ${i + 1} (${catLabel}), locked`);
+          bubble.setAttribute('aria-disabled', 'true');
+        }
+      } else {
+        bubble.setAttribute('aria-hidden', 'true');
+      }
       pathEl.appendChild(bubble);
     });
 
     // ── Top fade overlay when more levels are hidden above ────────────────
-    if (showFade) {
-      const fade = document.createElement('div');
-      fade.style.cssText = 'position:absolute;top:0;left:0;right:0;height:120px;' +
-        'background:linear-gradient(to bottom,var(--bg) 0%,transparent 100%);' +
-        'pointer-events:none;z-index:10;';
-      pathEl.appendChild(fade);
-    }
+    const mapFadeEl = document.getElementById('mapTopFade');
+    if (mapFadeEl) mapFadeEl.style.display = showFade ? 'block' : 'none';
 
     // ── Scroll to current node — set before paint so no visible jump ─────────
     const cur = getPos(currentMapNodeIdx);
     if (cur) {
+      const nodeInPathEl = cur.y + yShift + domOffset;
       const h = scrollEl.clientHeight || window.innerHeight;
-      scrollEl.scrollTop = Math.max(0, cur.y + yShift - h * 0.4);
+      scrollEl.scrollTop = Math.max(0, nodeInPathEl - h * 0.6);
     }
   }
 

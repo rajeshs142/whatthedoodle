@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.rajeshs142.whatthedoodle",
+    "sha256_cert_fingerprints": [
+      "7A:13:75:28:95:07:4D:50:C6:F9:DD:49:D0:9B:6E:22:D9:C4:23:46:3C:76:74:4F:C5:E5:37:DB:43:7C:DA:47"
+    ]
+  }
+}]

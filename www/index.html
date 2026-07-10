@@ -16,32 +16,33 @@
 <div class="game">
 
   <!-- PAGE: HOME -->
-  <div id="page-home" class="page">
-    <div id="homeBg"></div>
+  <div id="page-home" class="page" role="main" aria-label="Home">
+    <div id="homeBg" aria-hidden="true"></div>
     <div class="home-content">
-      <div class="home-logo" id="homeLogo">WHAT THE<br/><span>DOODLE?</span></div>
-      <div class="home-tagline">CAN YOU NAME THE DOODLE?</div>
+      <h1 class="home-logo" id="homeLogo">WHAT THE<br/><span>DOODLE?</span></h1>
+      <p class="home-tagline">CAN YOU NAME THE DOODLE?</p>
 
-      <div id="homeBtns" class="home-btns">
+      <nav id="homeBtns" class="home-btns" aria-label="Main menu">
 
         <button class="home-btn primary" onclick="onPlayClick()">PLAY</button>
       <button class="home-btn secondary" id="homeDailyBtn" onclick="startDailyMode()">DAILY</button>
-      <button class="home-btn secondary" onclick="hasFullAccess() ? showCategoriesPage() : showStorePage()">ALL CATEGORIES</button>
+
       <button class="home-btn secondary" onclick="showDoodlesPage()">CREATE MY DOODLE</button>
       <button class="home-btn secondary" onclick="showSettingsPage()">SETTINGS</button>
-      </div>
+      </nav>
     </div>
   </div>
 
   <!-- PAGE: LEVEL MAP -->
 
-  <div id="page-levels" class="page">
-    <div class="page-header">
+  <div id="page-levels" class="page" role="main" aria-label="Level Map">
+    <div class="page-header" role="banner">
       <span class="page-header-title">MAP</span>
     </div>
-    <div class="levels-scroll">
+    <div class="levels-scroll" role="region" aria-label="Level nodes">
       <div class="level-path" id="levelPath"></div>
     </div>
+    <div id="mapTopFade" aria-hidden="true" style="display:none;position:absolute;top:48px;left:0;right:0;height:100px;background:linear-gradient(to bottom,var(--bg) 0%,transparent 100%);pointer-events:none;z-index:10;"></div>
     <div class="page-footer">
       <button class="overlay-btn home" onclick="showHome()">HOME</button>
     </div>
@@ -49,39 +50,39 @@
 
 
   <!-- PAGE: GAME -->
-  <div id="page-game" class="page">
-    <div id="doodlePlayHeader" class="doodle-play-header" style="display:none"></div>
-    <div class="score-bar">
+  <div id="page-game" class="page" role="main" aria-label="Game">
+    <div id="doodlePlayHeader" class="doodle-play-header" style="display:none" aria-live="polite"></div>
+    <div class="score-bar" role="status" aria-label="Game scores">
       <div>
-        <div>Score</div>
-        <div class="score-val" id="scoreVal">0</div>
+        <div aria-hidden="true">Score</div>
+        <div class="score-val" id="scoreVal" aria-label="Score: 0">0</div>
       </div>
       <div style="text-align:center">
-        <div id="timerDisplay" class="game-timer">00:00</div>
+        <div id="timerDisplay" class="game-timer" aria-live="off" aria-label="Time remaining">00:00</div>
         <div class="game-subline"><span id="dayLabel" style="display:none"></span><span id="dayLabelSep" style="display:none"> · </span><span id="drawingNum">1/3</span></div>
       </div>
       <div style="text-align:right">
-        <div>Best</div>
-        <div class="score-val" id="bestVal">0</div>
+        <div aria-hidden="true">Best</div>
+        <div class="score-val" id="bestVal" aria-label="Best score: 0">0</div>
       </div>
     </div>
-    <div class="game-timer-track"><div class="timer-fill" id="timerFill"></div></div>
-    <div class="canvas-wrap"><canvas id="drawCanvas"></canvas></div>
-    <div id="status"></div>
+    <div class="game-timer-track" aria-hidden="true"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="canvas-wrap"><canvas id="drawCanvas" aria-label="Doodle drawing area" role="img"></canvas></div>
+    <div id="status" role="status" aria-live="polite" aria-atomic="true"></div>
     <div class="input-row">
       <div class="input-wrap">
-        <input id="guessInput" type="text" placeholder="GUESS" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="30" inputmode="none" readonly/>
-        <div id="micBtn" class="mic-btn" style="display:none" onclick="toggleMicManual()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
+        <input id="guessInput" type="text" placeholder="GUESS" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="30" inputmode="none" readonly aria-label="Your guess"/>
+        <button id="micBtn" class="mic-btn" style="display:none" onclick="toggleMicManual()" aria-label="Toggle microphone" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></button>
       </div>
-      <button id="submitBtn" onclick="submitGuess()">GO</button>
+      <button id="submitBtn" onclick="submitGuess()" aria-label="Submit guess">GO</button>
     </div>
-    <div class="keyboard" id="keyboard"></div>
+    <div class="keyboard" id="keyboard" role="group" aria-label="On-screen keyboard"></div>
   </div>
 
   <!-- PAGE: ROUND RESULT -->
-  <div id="page-result" class="page">
+  <div id="page-result" class="page" role="main" aria-label="Round result">
     <div class="page-header">
-      <span class="page-header-title" id="resultTitle">NICE!</span>
+      <span class="page-header-title" id="resultTitle" aria-live="polite">NICE!</span>
     </div>
     <div class="page-content">
       <div id="resultSvgWrap"></div>
@@ -96,10 +97,13 @@
     </div>
     <div class="page-footer">
       <button class="overlay-btn primary" id="nextBtn" onclick="nextDrawing()">NEXT DRAWING</button>
-      <div id="resultLevelBtns" class="result-level-btns" style="display:none">
-        <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
+      <div id="resultLevelBtns" style="display:none;width:100%;flex-direction:column;gap:8px">
         <button class="overlay-btn primary" id="nextLevelBtn" onclick="goNextLevel()">NEXT</button>
         <button class="overlay-btn primary" id="retryLevelBtn" onclick="playMapNode(currentMapNodeIdx)" style="display:none">PLAY AGAIN</button>
+        <div class="summary-btn-row">
+          <button class="overlay-btn secondary" onclick="shareLevel()">SHARE</button>
+          <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
+        </div>
       </div>
       <button class="overlay-btn home" id="resultHomeBtn" onclick="showHome()">HOME</button>
     </div>
@@ -202,12 +206,12 @@
   </div>
 
   <!-- PAGE: ALL CATEGORIES -->
-  <div id="page-categories" class="page">
+  <div id="page-categories" class="page" role="main" aria-label="All Categories">
     <div class="page-header">
       <span class="page-header-title">CATEGORIES</span>
     </div>
     <div class="page-content">
-      <div id="catPickerGrid" class="cat-picker-grid"></div>
+      <div id="catPickerGrid" class="cat-picker-grid" role="list" aria-label="Category list"></div>
     </div>
     <div class="page-footer">
       <button class="overlay-btn home" onclick="showHome()">HOME</button>
@@ -215,12 +219,12 @@
   </div>
 
   <!-- PAGE: CATEGORY LEVELS -->
-  <div id="page-cat-levels" class="page">
+  <div id="page-cat-levels" class="page" role="main" aria-label="Category levels">
     <div class="page-header">
-      <span class="page-header-title" id="catLevelsTitle">ANIMALS</span>
+      <span class="page-header-title" id="catLevelsTitle" aria-live="polite">ANIMALS</span>
     </div>
     <div class="page-content">
-      <div id="catLevelsGrid" class="cat-levels-grid"></div>
+      <div id="catLevelsGrid" class="cat-levels-grid" role="list" aria-label="Levels in category"></div>
     </div>
     <div class="page-footer">
       <div class="summary-btn-row">
@@ -231,58 +235,90 @@
   </div>
 
   <!-- PAGE: SETTINGS -->
-  <div id="page-settings" class="page">
+  <div id="page-settings" class="page" role="main" aria-label="Settings">
     <div class="page-header">
       <span class="page-header-title" style="text-align:center;width:100%">SETTINGS</span>
     </div>
     <div class="page-content" style="gap:14px">
     <div class="preview-wrap">
-      <div id="settingsPreviewFrame" class="preview-frame">
-        
+      <div id="settingsPreviewFrame" class="preview-frame" role="img" aria-label="Drawing style preview">
+
       </div>
     </div>
-    <div class="cfg-grid" style="width:100%;max-width:400px">
+    <div class="cfg-grid" style="width:100%;max-width:400px" role="form" aria-label="Settings">
       <div class="cfg-row">
-        <label class="cfg-label">Theme</label>
-        <select id="cfg-theme" onchange="onSettingChange()">
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="sepia">Sepia</option>
-          <option value="ocean">Ocean</option>
-          <option value="forest">Forest</option>
-        </select>
+        <label class="cfg-label" for="cfg-theme-btn">Theme</label>
+        <div class="cfg-custom-select" id="cfg-theme-wrap" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="cfg-theme-panel" aria-labelledby="cfg-theme-label">
+          <div class="cfg-select-btn" id="cfg-theme-btn" tabindex="0" role="button" aria-label="Theme: Dark" onclick="toggleCfgDropdown('cfg-theme-wrap')" onkeydown="handleCfgDropdownKey(event,'cfg-theme-wrap','cfg-theme')">
+            <span class="cfg-select-val" id="cfg-theme-val">Dark</span>
+            <span class="cfg-select-arrow" aria-hidden="true">▾</span>
+          </div>
+          <div class="cfg-select-panel" id="cfg-theme-panel" role="listbox" aria-label="Theme options">
+            <div class="cfg-select-opt" data-val="light"  role="option" tabindex="-1" onclick="pickCfgOption('cfg-theme-wrap','cfg-theme','light','Light')"  onkeydown="handleCfgOptKey(event,'cfg-theme-wrap','cfg-theme','light','Light')">Light</div>
+            <div class="cfg-select-opt" data-val="dark"   role="option" tabindex="-1" onclick="pickCfgOption('cfg-theme-wrap','cfg-theme','dark','Dark')"   onkeydown="handleCfgOptKey(event,'cfg-theme-wrap','cfg-theme','dark','Dark')">Dark</div>
+            <div class="cfg-select-opt" data-val="sepia"  role="option" tabindex="-1" onclick="pickCfgOption('cfg-theme-wrap','cfg-theme','sepia','Sepia')"  onkeydown="handleCfgOptKey(event,'cfg-theme-wrap','cfg-theme','sepia','Sepia')">Sepia</div>
+            <div class="cfg-select-opt" data-val="ocean"  role="option" tabindex="-1" onclick="pickCfgOption('cfg-theme-wrap','cfg-theme','ocean','Ocean')"  onkeydown="handleCfgOptKey(event,'cfg-theme-wrap','cfg-theme','ocean','Ocean')">Ocean</div>
+            <div class="cfg-select-opt" data-val="forest" role="option" tabindex="-1" onclick="pickCfgOption('cfg-theme-wrap','cfg-theme','forest','Forest')" onkeydown="handleCfgOptKey(event,'cfg-theme-wrap','cfg-theme','forest','Forest')">Forest</div>
+          </div>
+          <select id="cfg-theme" style="display:none" onchange="onSettingChange()">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="sepia">Sepia</option>
+            <option value="ocean">Ocean</option>
+            <option value="forest">Forest</option>
+          </select>
+        </div>
       </div>
       <div class="cfg-row">
-        <label class="cfg-label">Stroke Mode</label>
-        <select id="cfg-strokeMode" onchange="onSettingChange()">
-          <option value="forward">Forward</option>
-          <option value="reverse">Reverse</option>
-          <option value="random">Random</option>
-          <option value="all">All at Once</option>
-        </select>
+        <label class="cfg-label" for="cfg-strokeMode-btn">Stroke Mode</label>
+        <div class="cfg-custom-select" id="cfg-strokeMode-wrap" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="cfg-strokeMode-panel">
+          <div class="cfg-select-btn" id="cfg-strokeMode-btn" tabindex="0" role="button" aria-label="Stroke Mode: Forward" onclick="toggleCfgDropdown('cfg-strokeMode-wrap')" onkeydown="handleCfgDropdownKey(event,'cfg-strokeMode-wrap','cfg-strokeMode')">
+            <span class="cfg-select-val" id="cfg-strokeMode-val">Forward</span>
+            <span class="cfg-select-arrow" aria-hidden="true">▾</span>
+          </div>
+          <div class="cfg-select-panel" id="cfg-strokeMode-panel" role="listbox" aria-label="Stroke Mode options">
+            <div class="cfg-select-opt" data-val="forward" role="option" tabindex="-1" onclick="pickCfgOption('cfg-strokeMode-wrap','cfg-strokeMode','forward','Forward')" onkeydown="handleCfgOptKey(event,'cfg-strokeMode-wrap','cfg-strokeMode','forward','Forward')">Forward</div>
+            <div class="cfg-select-opt" data-val="reverse" role="option" tabindex="-1" onclick="pickCfgOption('cfg-strokeMode-wrap','cfg-strokeMode','reverse','Reverse')" onkeydown="handleCfgOptKey(event,'cfg-strokeMode-wrap','cfg-strokeMode','reverse','Reverse')">Reverse</div>
+            <div class="cfg-select-opt" data-val="random"  role="option" tabindex="-1" onclick="pickCfgOption('cfg-strokeMode-wrap','cfg-strokeMode','random','Random')"  onkeydown="handleCfgOptKey(event,'cfg-strokeMode-wrap','cfg-strokeMode','random','Random')">Random</div>
+            <div class="cfg-select-opt" data-val="all"     role="option" tabindex="-1" onclick="pickCfgOption('cfg-strokeMode-wrap','cfg-strokeMode','all','All at Once')" onkeydown="handleCfgOptKey(event,'cfg-strokeMode-wrap','cfg-strokeMode','all','All at Once')">All at Once</div>
+          </div>
+          <select id="cfg-strokeMode" style="display:none" onchange="onSettingChange()">
+            <option value="forward">Forward</option>
+            <option value="reverse">Reverse</option>
+            <option value="random">Random</option>
+            <option value="all">All at Once</option>
+          </select>
+        </div>
       </div>
       <div class="cfg-row" style="display:none">
-        <label class="cfg-label">Draw Time (s)</label>
+        <label class="cfg-label" for="cfg-drawTime">Draw Time (s)</label>
         <input type="number" id="cfg-drawTime" min="1" max="60" step="1"/>
       </div>
       <div class="cfg-row" style="display:none">
-        <label class="cfg-label">Guess Time (s)</label>
-        <input type="number" id="cfg-guessTime" min="1" max="60" step="1"/>
-      </div>
-      <div class="cfg-row" style="display:none">
-        <label class="cfg-label">Stroke Width</label>
+        <label class="cfg-label" for="cfg-strokeWidth">Stroke Width</label>
         <input type="number" id="cfg-strokeWidth" min="1" max="10" step="1"/>
       </div>
       <div class="cfg-row">
-        <label class="cfg-label">Frame Style</label>
-        <select id="cfg-frameStyle" onchange="onSettingChange()">
-          <option value="none">None</option>
-          <option value="simple">Simple</option>
-          <option value="classic">Classic</option>
-        </select>
+        <label class="cfg-label" for="cfg-frameStyle-btn">Frame Style</label>
+        <div class="cfg-custom-select" id="cfg-frameStyle-wrap" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-owns="cfg-frameStyle-panel">
+          <div class="cfg-select-btn" id="cfg-frameStyle-btn" tabindex="0" role="button" aria-label="Frame Style: None" onclick="toggleCfgDropdown('cfg-frameStyle-wrap')" onkeydown="handleCfgDropdownKey(event,'cfg-frameStyle-wrap','cfg-frameStyle')">
+            <span class="cfg-select-val" id="cfg-frameStyle-val">None</span>
+            <span class="cfg-select-arrow" aria-hidden="true">▾</span>
+          </div>
+          <div class="cfg-select-panel" id="cfg-frameStyle-panel" role="listbox" aria-label="Frame Style options">
+            <div class="cfg-select-opt" data-val="none"    role="option" tabindex="-1" onclick="pickCfgOption('cfg-frameStyle-wrap','cfg-frameStyle','none','None')"       onkeydown="handleCfgOptKey(event,'cfg-frameStyle-wrap','cfg-frameStyle','none','None')">None</div>
+            <div class="cfg-select-opt" data-val="simple"  role="option" tabindex="-1" onclick="pickCfgOption('cfg-frameStyle-wrap','cfg-frameStyle','simple','Simple')"   onkeydown="handleCfgOptKey(event,'cfg-frameStyle-wrap','cfg-frameStyle','simple','Simple')">Simple</div>
+            <div class="cfg-select-opt" data-val="classic" role="option" tabindex="-1" onclick="pickCfgOption('cfg-frameStyle-wrap','cfg-frameStyle','classic','Classic')" onkeydown="handleCfgOptKey(event,'cfg-frameStyle-wrap','cfg-frameStyle','classic','Classic')">Classic</div>
+          </div>
+          <select id="cfg-frameStyle" style="display:none" onchange="onSettingChange()">
+            <option value="none">None</option>
+            <option value="simple">Simple</option>
+            <option value="classic">Classic</option>
+          </select>
+        </div>
       </div>
       <div class="cfg-row" style="display:none">
-        <label class="cfg-label">Canvas Effect</label>
+        <label class="cfg-label" for="cfg-canvasEffect">Canvas Effect</label>
         <select id="cfg-canvasEffect">
           <option value="none">None</option>
           <option value="rotate">Rotate</option>
@@ -292,35 +328,46 @@
       </div>
       <div class="cfg-row cfg-check" style="display:none">
         <input type="checkbox" id="cfg-showMillis"/>
-        <label class="cfg-label">Show Millis</label>
+        <label class="cfg-label" for="cfg-showMillis">Show Millis</label>
       </div>
       <div class="cfg-row cfg-check" style="display:none">
         <input type="checkbox" id="cfg-showThread"/>
-        <label class="cfg-label">Show Thread</label>
+        <label class="cfg-label" for="cfg-showThread">Show Thread</label>
       </div>
       <div class="cfg-row cfg-check" style="display:none">
         <input type="checkbox" id="cfg-showNail"/>
-        <label class="cfg-label">Show Nail</label>
+        <label class="cfg-label" for="cfg-showNail">Show Nail</label>
       </div>
       <div class="cfg-row cfg-check" style="display:none">
         <input type="checkbox" id="cfg-showSwing"/>
-        <label class="cfg-label">Show Swing</label>
+        <label class="cfg-label" for="cfg-showSwing">Show Swing</label>
+      </div>
+      <div class="cfg-row">
+        <label class="cfg-label" id="cfg-guessTime-label">Guess Time</label>
+        <div class="cfg-stepper" role="group" aria-labelledby="cfg-guessTime-label">
+          <button class="cfg-stepper-btn" onclick="stepCfgGuessTime(-5)" aria-label="Decrease guess time by 5 seconds">−</button>
+          <span class="cfg-stepper-val" id="cfg-guessTime-val" aria-live="polite">10s</span>
+          <button class="cfg-stepper-btn" onclick="stepCfgGuessTime(+5)" aria-label="Increase guess time by 5 seconds">+</button>
+          <input type="number" id="cfg-guessTime" min="10" max="30" step="5" style="display:none" aria-hidden="true"/>
+        </div>
       </div>
       <div class="cfg-row cfg-check">
         <input type="checkbox" id="cfg-showSuggestions" onchange="onSettingChange()"/>
-        <label class="cfg-label">Suggestions</label>
+        <label class="cfg-label" for="cfg-showSuggestions">Suggestions</label>
       </div>
       <div class="cfg-row cfg-check" id="cfg-sounds-row">
         <input type="checkbox" id="cfg-sounds" onchange="applySoundsToggle()"/>
-        <label class="cfg-label">Sounds</label>
+        <label class="cfg-label" for="cfg-sounds">Sounds</label>
       </div>
 </div>
-    <div id="settingsExitPrompt" class="settings-exit-prompt">
-      <div class="prompt-label">Apply changes before leaving?</div>
-      <div class="prompt-btns">
-        <button class="overlay-btn primary" style="flex:1" onclick="applyCfg()">APPLY</button>
-        <button class="overlay-btn secondary" style="flex:1" onclick="settingsDiscard()">DISCARD</button>
-        <button class="overlay-btn home" style="flex:1" onclick="document.getElementById('settingsExitPrompt').style.display='none'">STAY</button>
+    <div id="settingsExitPrompt" role="dialog" aria-modal="true" aria-labelledby="settingsExitTitle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+      <div style="background:var(--surface);color:var(--text);border-radius:14px;padding:28px 24px;max-width:300px;width:90%;text-align:center;">
+        <div id="settingsExitTitle" style="font-size:1rem;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;">APPLY CHANGES?</div>
+        <div style="font-size:0.8rem;color:var(--sub);margin-bottom:24px;">You have unsaved settings changes.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="overlay-btn primary" onclick="applyCfg()">APPLY &amp; LEAVE</button>
+          <button class="overlay-btn secondary" onclick="settingsDiscard()">DISCARD</button>
+        </div>
       </div>
     </div>
     </div><!-- end page-content -->
@@ -380,9 +427,9 @@
         </div>
       </div>
       <div id="summaryLevelBtnsWon" style="display:none;width:100%;flex-direction:column;gap:8px">
-        <button class="overlay-btn primary" onclick="shareLevel()">SHARE RESULT</button>
+        <button class="overlay-btn primary" onclick="goNextLevel()">NEXT</button>
         <div class="summary-btn-row">
-          <button class="overlay-btn secondary" onclick="goNextLevel()">NEXT</button>
+          <button class="overlay-btn secondary" onclick="shareLevel()">SHARE</button>
           <button class="overlay-btn secondary" onclick="showLevelMap()">MAP</button>
         </div>
       </div>
@@ -431,10 +478,10 @@
     <div class="page-header">
       <span class="page-header-title">ARCHIVE</span>
     </div>
-    <div class="cal-filters" style="flex-shrink:0">
-      <button class="cal-filter active" data-filter="all"        onclick="setCalFilter('all')">ALL</button>
-      <button class="cal-filter"        data-filter="completed"  onclick="setCalFilter('completed')">PLAYED</button>
-      <button class="cal-filter"        data-filter="incomplete" onclick="setCalFilter('incomplete')">NOT PLAYED</button>
+    <div class="cal-filters" style="flex-shrink:0" role="group" aria-label="Filter archive">
+      <button class="cal-filter active" data-filter="all"        onclick="setCalFilter('all')"        aria-pressed="true">ALL</button>
+      <button class="cal-filter"        data-filter="completed"  onclick="setCalFilter('completed')"  aria-pressed="false">PLAYED</button>
+      <button class="cal-filter"        data-filter="incomplete" onclick="setCalFilter('incomplete')" aria-pressed="false">NOT PLAYED</button>
     </div>
     <div id="calendarBody" style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;gap:8px;padding:0 16px"></div>
     <div class="page-footer">
@@ -448,7 +495,7 @@
     </div>
 
 <!-- STORE OVERLAY -->
-<div id="storeOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:var(--bg);flex-direction:column;overflow-y:auto">
+<div id="storeOverlay" role="dialog" aria-modal="true" aria-label="Unlock full access" style="display:none;position:fixed;inset:0;z-index:200;background:var(--bg);flex-direction:column;overflow-y:auto">
   <div class="page-header">
     <span class="page-header-title">UNLOCK ALL</span>
   </div>
@@ -491,9 +538,9 @@
 </div>
 
 <!-- SHARE SHEET -->
-<div id="shareSheet">
+<div id="shareSheet" role="dialog" aria-modal="true" aria-labelledby="shareSheetTitle">
   <div class="share-sheet-title" id="shareSheetTitle">SHARE</div>
-  <div id="shareUrlList" class="share-url-list"></div>
+  <div id="shareUrlList" class="share-url-list" aria-label="Share links"></div>
   <button class="overlay-btn" id="shareNativeBtn" onclick="nativeShare()" style="display:none">SHARE VIA...</button>
   <button class="overlay-btn" onclick="closeShareSheet()">CLOSE</button>
 </div>

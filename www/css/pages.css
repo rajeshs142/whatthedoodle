@@ -17,17 +17,6 @@
   box-shadow: inset 0 0 0 2px var(--frame-dark), inset 0 0 10px rgba(0,0,0,0.2),
               0 0 0 1px var(--frame-dark), 5px 10px 24px var(--frame-shadow);
 }
-.settings-exit-prompt {
-  display: none; flex-direction: column; align-items: center; gap: 10px;
-  width: 100%; max-width: 400px; padding: 14px 16px;
-  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-  text-align: center;
-}
-.settings-exit-prompt .prompt-label {
-  font-size: 0.7rem; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--sub);
-}
-.settings-exit-prompt .prompt-btns { display: flex; gap: 8px; width: 100%; }
 .cfg-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .cfg-row { display: flex; flex-direction: row; align-items: center; gap: 12px; justify-content: space-between; }
 .cfg-row select, .cfg-row input[type=number] { flex-shrink: 0; width: 140px; }
@@ -53,6 +42,56 @@
 }
 .cfg-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--correct); margin-top: 6px; }
 .cfg-check { flex-direction: row; align-items: center; gap: 8px; }
+
+/* ── STEPPER ────────────────────────────────────────────────────────────── */
+.cfg-stepper { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+.cfg-stepper-btn {
+  width: 34px; height: 34px; border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 1.1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.cfg-stepper-btn:first-child { border-radius: 6px 0 0 6px; }
+.cfg-stepper-btn:last-child  { border-radius: 0 6px 6px 0; }
+.cfg-stepper-btn:active { background: var(--border); }
+.cfg-stepper-val {
+  min-width: 44px; height: 34px; border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 0.85rem; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center;
+  justify-content: center; letter-spacing: 1px;
+}
+
+/* ── CUSTOM SELECT ──────────────────────────────────────────────────────── */
+.cfg-custom-select { position: relative; flex-shrink: 0; width: 140px; }
+.cfg-select-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 34px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 700;
+  padding: 0 10px; cursor: pointer; user-select: none;
+}
+.cfg-select-btn:active { background: var(--surface); }
+.cfg-select-arrow { font-size: 0.7rem; color: var(--sub); margin-left: 6px; transition: transform 0.15s; }
+.cfg-custom-select.open .cfg-select-arrow { transform: rotate(180deg); }
+.cfg-select-panel {
+  display: none; position: absolute; right: 0; top: 38px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; z-index: 200;
+  min-width: 100%; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+}
+.cfg-custom-select.open .cfg-select-panel { display: block; }
+.cfg-select-opt {
+  padding: 10px 14px; font-size: 0.8rem; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; color: var(--text);
+  cursor: pointer; white-space: nowrap;
+}
+.cfg-select-opt:hover, .cfg-select-opt.selected { background: var(--border); }
+.cfg-select-opt.selected { color: var(--correct); }
+.cfg-select-opt:focus { background: var(--border); outline: none; }
+.cfg-select-btn:focus-visible { outline: 2px solid var(--correct); outline-offset: 2px; }
+.cfg-stepper-btn:focus-visible { outline: 2px solid var(--correct); outline-offset: 2px; }
+.cal-row:focus-visible { outline: 2px solid var(--correct); outline-offset: 2px; }
+.cal-filter:focus-visible { outline: 2px solid var(--correct); outline-offset: 2px; }
 
 /* ARCHIVE PAGE */
 #page-archive { gap: 0; }

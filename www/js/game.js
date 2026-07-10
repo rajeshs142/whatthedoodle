@@ -315,7 +315,7 @@ function skipDrawing() {
 function showResult(won, finalScore) {
   const isDoodle   = isDoodleMode;
   const slotForCalc = isDoodle ? _doodleQueueIdx : playingSlot;
-  if (!isDoodle) setSlotScore(playingDay, playingSlot, finalScore);
+  if (!isDoodle && gameMode === 'daily') setSlotScore(playingDay, playingSlot, finalScore);
   const isLastSlot = isDoodle
     ? _doodleQueueIdx >= _doodleQueue.length - 1
     : playingSlot >= CONFIG.gamesPerDay - 1;
@@ -548,7 +548,7 @@ function _doResetAllData() {
 const STORE_KEY = 'wtd_full_access';
 
 function hasFullAccess() {
-  return true; // TODO: restore localStorage check before Play Store submission
+  return false;
 }
 
 function showStorePage() {
@@ -556,6 +556,9 @@ function showStorePage() {
   if (!el) return;
   el.classList.add('show');
   el.style.display = 'flex';
+  el.removeAttribute('aria-hidden');
+  // Focus first focusable element inside
+  requestAnimationFrame(() => { const f = el.querySelector('button, [tabindex="0"]'); if (f) f.focus(); });
 
   // Build category grids using WORLD_THEMES
   const FREE_CATS = ['animals', 'food', 'vehicles', 'sports'];
@@ -596,6 +599,7 @@ function hideStorePage() {
   if (!el) return;
   el.classList.remove('show');
   el.style.display = 'none';
+  el.setAttribute('aria-hidden', 'true');
 }
 
 // ── CATEGORY FLOW STATE ───────────────────────────────────────────────────
@@ -665,15 +669,20 @@ function showCategoriesPage() {
     const card = document.createElement('div');
     card.className = 'cat-pick-card' + (complete ? ' complete' : '');
     card.style.setProperty('--cat-color', theme.color);
+    card.setAttribute('role', 'listitem');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `${world.name} category, ${played} of ${total} played${complete ? ', complete' : ''}`);
 
     // Canvas for sample doodle
     const canvas = document.createElement('canvas');
     canvas.width  = 80;
     canvas.height = 80;
     canvas.className = 'cat-pick-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
 
     const meta = document.createElement('div');
     meta.className = 'cat-pick-meta';
+    meta.setAttribute('aria-hidden', 'true');
     meta.innerHTML =
       `<span class="cat-pick-name">${world.name}</span>` +
       `<span class="cat-pick-count${complete ? ' done' : ''}">${played} / ${total}${complete ? ' ✓' : ''}</span>`;
@@ -681,6 +690,7 @@ function showCategoriesPage() {
     card.appendChild(canvas);
     card.appendChild(meta);
     card.addEventListener('click', () => showCatLevelsPage(world.name));
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showCatLevelsPage(world.name); } });
     grid.appendChild(card);
 
     // Draw sample doodle after insertion (needs to be in DOM for theme color)
@@ -723,9 +733,15 @@ function showCatLevelsPage(catName) {
     btn.className   = 'cat-level-btn' + (played ? ' played' : '');
     btn.style.setProperty('--cat-color', (WORLD_THEMES[currentCatName] || {}).color || '#888');
     btn.innerHTML = played
-      ? `<span class="cat-lvl-num">${idx + 1}</span><span class="cat-lvl-stars">${'★'.repeat(starCount)}</span>`
-      : `<span class="cat-lvl-num">${idx + 1}</span>`;
+      ? `<span class="cat-lvl-num" aria-hidden="true">${idx + 1}</span><span class="cat-lvl-stars" aria-hidden="true">${'★'.repeat(starCount)}</span>`
+      : `<span class="cat-lvl-num" aria-hidden="true">${idx + 1}</span>`;
+    btn.setAttribute('role', 'listitem');
+    btn.setAttribute('tabindex', '0');
+    btn.setAttribute('aria-label', played
+      ? `Level ${idx + 1}, ${starCount} star${starCount !== 1 ? 's' : ''}, play again`
+      : `Level ${idx + 1}, not played`);
     btn.addEventListener('click', () => playCatLevel(idx));
+    btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playCatLevel(idx); } });
     grid.appendChild(btn);
   });
 
@@ -851,28 +867,3 @@ function canPlayLevel(nodeIdx) {
   return hasFullAccess() || nodeIdx < FREE_LEVEL_LIMIT - 1;
 }
 
-// ── DEV UNLOCK (tap logo 5× to toggle full access) ───────────────────────
-// Strip this block before submitting to Play Store.
-(function() {
-  let taps = 0, timer = null;
-  document.addEventListener('DOMContentLoaded', function() {
-    const logo = document.getElementById('homeLogo');
-    if (!logo) return;
-    logo.addEventListener('click', function() {
-      taps++;
-      clearTimeout(timer);
-      timer = setTimeout(function() { taps = 0; }, 1500);
-      if (taps >= 5) {
-        taps = 0;
-        const now = hasFullAccess();
-        localStorage.setItem(STORE_KEY, now ? '0' : '1');
-        const msg = now ? 'DEV: Full access OFF' : 'DEV: Full access ON ✓';
-        const toast = document.createElement('div');
-        toast.textContent = msg;
-        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:20px;font-size:0.75rem;font-weight:700;letter-spacing:1px;z-index:9999;pointer-events:none';
-        document.body.appendChild(toast);
-        setTimeout(function() { toast.remove(); location.reload(); }, 900);
-      }
-    });
-  });
-})();

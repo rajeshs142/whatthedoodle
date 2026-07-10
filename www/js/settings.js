@@ -1,6 +1,120 @@
 // ── SETTINGS PAGE ─────────────────────────────────────────────────────────
 let _settingsApplied = null;
 
+function stepCfgGuessTime(delta) {
+  const inp = document.getElementById('cfg-guessTime');
+  const val = Math.min(30, Math.max(10, (parseInt(inp.value) || 10) + delta));
+  inp.value = val;
+  document.getElementById('cfg-guessTime-val').textContent = val + 's';
+  onSettingChange();
+}
+
+function toggleCfgDropdown(wrapId) {
+  const wrap = document.getElementById(wrapId);
+  const isOpen = wrap.classList.contains('open');
+  // Close all open dropdowns first
+  document.querySelectorAll('.cfg-custom-select.open').forEach(el => {
+    el.classList.remove('open');
+    el.setAttribute('aria-expanded', 'false');
+  });
+  if (!isOpen) {
+    wrap.classList.add('open');
+    wrap.setAttribute('aria-expanded', 'true');
+    // Focus the first option
+    const first = wrap.querySelector('.cfg-select-opt');
+    if (first) first.focus();
+  }
+}
+
+function handleCfgDropdownKey(e, wrapId, selectId) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    toggleCfgDropdown(wrapId);
+  } else if (e.key === 'Escape') {
+    const wrap = document.getElementById(wrapId);
+    wrap.classList.remove('open');
+    wrap.setAttribute('aria-expanded', 'false');
+    document.getElementById(wrapId + '-btn') && document.getElementById(wrapId + '-btn').focus();
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    toggleCfgDropdown(wrapId);
+  }
+}
+
+function handleCfgOptKey(e, wrapId, selectId, val, label) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    pickCfgOption(wrapId, selectId, val, label);
+    // Return focus to trigger button
+    const btn = document.getElementById(wrapId.replace('-wrap', '-btn'));
+    if (btn) btn.focus();
+  } else if (e.key === 'Escape') {
+    const wrap = document.getElementById(wrapId);
+    wrap.classList.remove('open');
+    wrap.setAttribute('aria-expanded', 'false');
+    const btn = document.getElementById(wrapId.replace('-wrap', '-btn'));
+    if (btn) btn.focus();
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = e.target.nextElementSibling;
+    if (next && next.classList.contains('cfg-select-opt')) next.focus();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = e.target.previousElementSibling;
+    if (prev && prev.classList.contains('cfg-select-opt')) prev.focus();
+    else {
+      // At top — close and return to button
+      const wrap = document.getElementById(wrapId);
+      wrap.classList.remove('open');
+      wrap.setAttribute('aria-expanded', 'false');
+      const btn = document.getElementById(wrapId.replace('-wrap', '-btn'));
+      if (btn) btn.focus();
+    }
+  }
+}
+
+function pickCfgOption(wrapId, selectId, val, label) {
+  const wrap = document.getElementById(wrapId);
+  const sel  = document.getElementById(selectId);
+  document.getElementById(selectId + '-val').textContent = label;
+  sel.value = val;
+  wrap.classList.remove('open');
+  wrap.setAttribute('aria-expanded', 'false');
+  // Update trigger button aria-label
+  const btn = document.getElementById(wrapId.replace('-wrap', '-btn'));
+  if (btn) {
+    const settingName = btn.getAttribute('aria-label').split(':')[0];
+    btn.setAttribute('aria-label', settingName + ': ' + label);
+  }
+  // Mark selected option
+  wrap.querySelectorAll('.cfg-select-opt').forEach(o => {
+    const isSelected = o.dataset.val === val || o.textContent.trim() === label;
+    o.classList.toggle('selected', isSelected);
+    o.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+  });
+  sel.dispatchEvent(new Event('change'));
+}
+
+function _syncCfgDropdown(wrapId, selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const val = sel.value;
+  const valEl = document.getElementById(selectId + '-val');
+  if (valEl) {
+    const opt = sel.querySelector(`option[value="${val}"]`);
+    if (opt) valEl.textContent = opt.textContent;
+  }
+  const wrap = document.getElementById(wrapId);
+  if (wrap) wrap.querySelectorAll('.cfg-select-opt').forEach(o => o.classList.toggle('selected', o.dataset.val === val || (o.textContent.trim() === (sel.querySelector(`option[value="${val}"]`)?.textContent || ''))));
+}
+
+// Close dropdowns when tapping outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cfg-custom-select')) {
+    document.querySelectorAll('.cfg-custom-select.open').forEach(el => el.classList.remove('open'));
+  }
+});
+
 function showSettingsPage() {
   document.getElementById('cfg-strokeMode').value        = CONFIG.strokeMode;
   document.getElementById('cfg-theme').value             = currentTheme;
@@ -9,6 +123,10 @@ function showSettingsPage() {
   document.getElementById('cfg-strokeWidth').value       = CONFIG.strokeWidth;
   document.getElementById('cfg-frameStyle').value        = CONFIG.frameStyle;
   document.getElementById('cfg-canvasEffect').value      = CONFIG.canvasEffect;
+  _syncCfgDropdown('cfg-theme-wrap',       'cfg-theme');
+  _syncCfgDropdown('cfg-strokeMode-wrap',  'cfg-strokeMode');
+  _syncCfgDropdown('cfg-frameStyle-wrap',  'cfg-frameStyle');
+  document.getElementById('cfg-guessTime-val').textContent = CONFIG.guessTime + 's';
   document.getElementById('cfg-showMillis').checked      = CONFIG.showMillis;
   document.getElementById('cfg-showThread').checked      = CONFIG.showThread;
   document.getElementById('cfg-showNail').checked        = CONFIG.showNail;
@@ -39,16 +157,18 @@ function _settingsSnapshot() {
     theme:           document.getElementById('cfg-theme').value,
     frameStyle:      document.getElementById('cfg-frameStyle').value,
     showSuggestions: document.getElementById('cfg-showSuggestions').checked,
+    guessTime:       document.getElementById('cfg-guessTime').value,
   };
 }
 
 function isSettingsDirty() {
   if (!_settingsApplied) return false;
   const s = _settingsSnapshot();
-  return s.strokeMode !== _settingsApplied.strokeMode ||
-         s.theme      !== _settingsApplied.theme      ||
-         s.frameStyle !== _settingsApplied.frameStyle  ||
-         s.showSuggestions !== _settingsApplied.showSuggestions;
+  return s.strokeMode      !== _settingsApplied.strokeMode      ||
+         s.theme           !== _settingsApplied.theme           ||
+         s.frameStyle      !== _settingsApplied.frameStyle      ||
+         s.showSuggestions !== _settingsApplied.showSuggestions ||
+         s.guessTime       !== _settingsApplied.guessTime;
 }
 
 function updateSettingsPreview() {
@@ -170,12 +290,13 @@ function animateSettingsPreview() {
 function onSettingChange() {
   updateSettingsPreview();
   animateSettingsPreview();
-  document.getElementById('settingsExitPrompt').style.display = 'none';
 }
 
 function settingsLeave() {
   if (isSettingsDirty()) {
-    document.getElementById('settingsExitPrompt').style.display = 'flex';
+    const ep = document.getElementById('settingsExitPrompt');
+    ep.style.display = 'flex';
+    requestAnimationFrame(() => { const f = ep.querySelector('button'); if (f) f.focus(); });
   } else {
     _previewAnimGen++;
     if (_settingsApplied) applyTheme(_settingsApplied.theme);

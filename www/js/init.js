@@ -49,6 +49,19 @@ function init() {
       if (onHome) CapApp.exitApp();
       else history.back();
     });
+
+    // App Link: handle shared doodle URL when app is already running
+    CapApp.addListener('appUrlOpen', ({ url }) => {
+      const enc = new URL(url).searchParams.get('doodle');
+      if (enc) loadDoodleFromUrl(enc);
+    });
+
+    // Cold start via App Link — check launch URL
+    CapApp.getLaunchUrl().then(({ url }) => {
+      if (!url) return;
+      const enc = new URL(url).searchParams.get('doodle');
+      if (enc) loadDoodleFromUrl(enc);
+    }).catch(() => {});
   }
 
   showHome();
