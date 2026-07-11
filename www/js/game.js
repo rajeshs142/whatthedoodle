@@ -279,6 +279,8 @@ function showHint1() {
   // Stagger pop-in for all tiles
   const tiles = el.querySelectorAll('.hint-tile');
   tiles.forEach((t, i) => {
+    t.style.transform = 'scale(0.4)';
+    t.style.opacity = '0';
     t.style.animationDelay = (i * 40) + 'ms';
     t.classList.add('pop');
   });

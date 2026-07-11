@@ -459,7 +459,6 @@
   font-size: 0.9rem; font-weight: 800; letter-spacing: 0;
   border: 2px solid var(--border);
   background: var(--surface); color: var(--sub);
-  transform: scale(0.4); opacity: 0;
   transition: none;
 }
 .hint-tile.blank { color: transparent; }
