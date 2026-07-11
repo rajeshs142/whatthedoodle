@@ -612,34 +612,43 @@ footer a:hover { color: var(--text); }
 
 /* header */
 .pm-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 16px 6px; flex-shrink: 0; gap: 10px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px 16px 6px; flex-shrink: 0;
 }
 .pm-logo {
   font-size: 0.7rem; font-weight: 700; letter-spacing: 3px;
   text-transform: uppercase; color: var(--sub);
 }
 .pm-logo span { color: var(--green); }
-.pm-timer-display {
-  font-size: 1.1rem; font-weight: 700; letter-spacing: 2px;
-  color: var(--text); font-variant-numeric: tabular-nums;
-  transition: color 0.3s;
+
+/* pre-game screen */
+#pmPlayScreen {
+  display: none; position: absolute; inset: 0; z-index: 10;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; padding: 32px 24px; text-align: center;
+  background: var(--bg);
 }
-.pm-timer-display.warn   { color: var(--gold); }
-.pm-timer-display.danger { color: #e05c5c; }
-.pm-sub {
-  font-size: 0.6rem; font-weight: 600; letter-spacing: 2px;
+#pmPlayScreen.show { display: flex; }
+.pm-challenge-label {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 3px;
   text-transform: uppercase; color: var(--sub);
 }
-
-/* timer bar */
-.pm-timer-bar {
-  width: 100%; height: 3px; background: var(--border); flex-shrink: 0;
+.pm-challenge-title {
+  font-size: clamp(1.6rem, 7vw, 2.4rem); font-weight: 800;
+  letter-spacing: 3px; text-transform: uppercase; line-height: 1.1;
+  color: var(--text);
 }
-.pm-timer-fill {
-  height: 100%; background: var(--green);
-  transition: width 0.1s linear, background 0.3s; width: 100%;
+.pm-challenge-title span { color: var(--green); }
+.pm-play-btn {
+  margin-top: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--green); color: #111; border: none; border-radius: 14px;
+  font-family: inherit; font-size: 0.85rem; font-weight: 800;
+  letter-spacing: 3px; text-transform: uppercase;
+  padding: 18px 40px; cursor: pointer; transition: opacity 0.15s;
+  box-shadow: 0 4px 24px rgba(82,183,136,0.35);
 }
+.pm-play-btn:hover { opacity: 0.88; }
 
 /* canvas */
 .pm-canvas-wrap {
@@ -757,16 +766,19 @@ footer a:hover { color: var(--text); }
 </style>
 
 <div id="playMode">
-  <div class="pm-header">
-    <div class="pm-logo">What the <span>Doodle?</span></div>
-    <div style="text-align:center">
-      <div class="pm-timer-display" id="pmTimerDisplay">00:35</div>
-      <div class="pm-sub" id="pmSubLabel">GUESS THE DRAWING</div>
-    </div>
-    <div style="width:80px"></div>
+  <!-- pre-game: shown on load, hidden when Play tapped -->
+  <div id="pmPlayScreen" class="show">
+    <p class="pm-challenge-label">Someone challenged you</p>
+    <h1 class="pm-challenge-title">Can you guess<br>the <span>doodle?</span></h1>
+    <button class="pm-play-btn" onclick="startChallenge()">
+      ▶ &nbsp;PLAY
+    </button>
+    <p class="pm-challenge-label" style="margin-top:4px">Free · No sign-up needed</p>
   </div>
 
-  <div class="pm-timer-bar"><div class="pm-timer-fill" id="pmTimerFill"></div></div>
+  <div class="pm-header">
+    <div class="pm-logo">What the <span>Doodle?</span></div>
+  </div>
 
   <div class="pm-canvas-wrap">
     <canvas id="playCanvas"></canvas>
@@ -863,7 +875,6 @@ footer a:hover { color: var(--text); }
   const rawWord   = doodle.w ? deobfuscate(doodle.w) : (doodle.word || '');
   const answer    = rawWord.toLowerCase().trim();
   const sharedUrl = location.href;
-  const TOTAL_MS  = 35000; // 35s total (matches app: drawTime=15 + guessTime=20)
   const DRAW_MS   = 15000;
 
   let gameOver = false;
@@ -947,10 +958,10 @@ footer a:hover { color: var(--text); }
     return d.trim();
   }
 
-  const sampled      = strokes.map(samplePath);
-  const strokeDurMs  = strokes.length > 0 ? DRAW_MS / strokes.length : DRAW_MS;
-  const done         = new Set();
-  let   animActive   = true;
+  const sampled     = strokes.map(samplePath);
+  const strokeDurMs = strokes.length > 0 ? DRAW_MS / strokes.length : DRAW_MS;
+  const done        = new Set();
+  let   animActive  = false;
 
   function drawFrame(doneSet, sampledPath, progress) {
     const c = setupCtx();
@@ -975,28 +986,13 @@ footer a:hover { color: var(--text); }
     })(performance.now());
   }
 
-  // ── Timer ──────────────────────────────────────────────────────────────
-  const timerFill = document.getElementById('pmTimerFill');
-  const timerDisp = document.getElementById('pmTimerDisplay');
-  const timerStart = performance.now();
-  let timerRaf;
-
-  function tickTimer(now) {
-    if (gameOver) return;
-    const elapsed = now - timerStart;
-    const remaining = Math.max(0, TOTAL_MS - elapsed);
-    const pct = remaining / TOTAL_MS;
-    timerFill.style.width = (pct*100)+'%';
-    timerFill.style.background = pct>0.4?'var(--green)':pct>0.2?'var(--gold)':'#e05c5c';
-    const secs = Math.ceil(remaining/1000);
-    const mm = String(Math.floor(secs/60)).padStart(2,'0');
-    const ss = String(secs%60).padStart(2,'0');
-    timerDisp.textContent = mm+':'+ss;
-    timerDisp.className = 'pm-timer-display' + (pct<=0.14?' danger':pct<=0.28?' warn':'');
-    if (remaining>0) timerRaf=requestAnimationFrame(tickTimer);
-    else endGame(false);
-  }
-  timerRaf = requestAnimationFrame(tickTimer);
+  // ── Start challenge (Play button tapped) ───────────────────────────────
+  window.startChallenge = function() {
+    document.getElementById('pmPlayScreen').style.display = 'none';
+    buildKeyboard();
+    animActive = true;
+    revealNext(0);
+  };
 
   // ── Keyboard ───────────────────────────────────────────────────────────
   const input  = document.getElementById('playInput');
