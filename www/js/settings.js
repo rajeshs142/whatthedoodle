@@ -146,7 +146,8 @@ function showSettingsPage() {
   const micChk = document.getElementById('cfg-mic');
   if (micChk) micChk.checked = localStorage.getItem('qg_mic') === '1';
   _settingsApplied = _settingsSnapshot();
-  document.getElementById('settingsExitPrompt').style.display = 'none';
+  const ep = document.getElementById('settingsExitPrompt');
+  if (ep) ep.style.display = 'none';
   updateSettingsPreview();
   showPage('settings');
   requestAnimationFrame(() => animateSettingsPreview());
