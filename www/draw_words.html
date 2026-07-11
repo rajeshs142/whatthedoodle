@@ -277,7 +277,7 @@ let skipped = new Set();
   if (ALREADY_DRAWN.has(w) || savedMap[w.toLowerCase()]) {
     wordIdx = nextUndrawn(wordIdx, 'forward');
   }
-  updateWord();
+  // updateWord() is called from initCanvas() after canvas is sized
   updateProgress();
 })();
 
@@ -384,6 +384,27 @@ function updateStrokeInfo() {
 }
 
 // ── WORD NAVIGATION ───────────────────────────────────────────────────────
+function pathToStrokes(savedEntry) {
+  const canvas = document.getElementById('drawCanvas');
+  const scale = canvas.width / 255;
+  return savedEntry.strokes.map(d => {
+    const parts = d.trim().split(/\s+/);
+    const pts = [];
+    let i = 0;
+    while (i < parts.length) {
+      const cmd = parts[i++];
+      if (cmd === 'M' || cmd === 'L') {
+        const tok = parts[i++];
+        let x, y;
+        if (tok.includes(',')) { [x, y] = tok.split(',').map(Number); }
+        else { x = parseFloat(tok); y = parseFloat(parts[i++]); }
+        pts.push({ x: x * scale, y: y * scale });
+      }
+    }
+    return { sw: savedEntry.sw || 3, pts };
+  }).filter(s => s.pts.length > 1);
+}
+
 function updateWord() {
   if (!WORDS.length) return;
   const entry = WORDS[wordIdx];
@@ -398,7 +419,31 @@ function updateWord() {
   refLink.href = 'https://www.google.com/search?q=' + encodeURIComponent(word + ' doodle') + '&tbm=isch';
   refLink.textContent = word.toUpperCase() + ' — REFERENCE IMAGE';
   localStorage.setItem('dw_idx', wordIdx);
+
+  // Load existing saved drawing onto canvas if present
+  const savedEntry = getSavedEntry(word);
+  if (savedEntry) {
+    strokes = pathToStrokes(savedEntry);
+    sw = savedEntry.sw || 2;
+    document.querySelectorAll('.sw-btn[data-sw]').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.sw) === sw));
+  } else {
+    strokes = [];
+  }
+  currentPts = [];
+  isDrawing = false;
+  updateStrokeInfo();
+  document.getElementById('save-btn').disabled = strokes.length === 0;
+  redraw();
+
   updateProgress();
+}
+
+function getSavedEntry(word) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || '[]');
+    return saved.find(s => s.word.toLowerCase() === word.toLowerCase()) || null;
+  } catch(e) { return null; }
 }
 
 function nextUndrawn(from, direction) {
@@ -574,6 +619,7 @@ function toast(msg) {
 // ── INIT ──────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
   initCanvas();
+  updateWord(); // canvas is now sized — safe to load saved strokes
   window.addEventListener('resize', initCanvas);
 });
 </script>
