@@ -1,9 +1,9 @@
 /* SETTINGS PAGE */
-#page-settings .page-content { align-items: center; }
-.preview-wrap { display: flex; align-items: center; justify-content: center; padding: 12px 0; }
+#page-settings .page-content { align-items: center; justify-content: flex-start; overflow-y: auto; }
+.preview-wrap { display: flex; align-items: center; justify-content: center; padding: 8px 0; }
 .preview-frame {
-  width: 220px; height: 220px; flex-shrink: 0;
-  padding: 20px;
+  width: 132px; height: 132px; flex-shrink: 0;
+  padding: 12px;
   background: var(--canvas-bg); border: 1px solid var(--border); border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   color: var(--stroke-color); transition: border 0.2s, box-shadow 0.2s, border-radius 0.2s;
