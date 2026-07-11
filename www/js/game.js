@@ -268,7 +268,7 @@ function _buildHintTiles(word, revealCount) {
     el.appendChild(tile);
     revealIdx++;
   });
-  el.style.display = 'flex';
+  el.classList.add('active');
 }
 
 function showHint1() {
@@ -299,7 +299,7 @@ function showHint2() {
 
 function hideHint() {
   const el = document.getElementById('hintDisplay');
-  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  if (el) { el.classList.remove('active'); el.innerHTML = ''; }
 }
 
 // ── GUESS ─────────────────────────────────────────────────────────────────
