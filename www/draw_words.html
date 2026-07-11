@@ -166,6 +166,13 @@
       <canvas id="drawCanvas"></canvas>
     </div>
 
+    <div style="text-align:center;padding:4px 0 2px;flex-shrink:0">
+      <a id="ref-link" href="#" target="_blank" rel="noopener"
+         style="font-size:0.68rem;color:#556;letter-spacing:1px;text-decoration:none">
+        REFERENCE IMAGE
+      </a>
+    </div>
+
     <div id="stroke-tools">
       <button class="sw-btn active" data-sw="2" onclick="setSW(2)">THIN</button>
       <button class="sw-btn" data-sw="4" onclick="setSW(4)">MED</button>
@@ -263,6 +270,13 @@ let skipped = new Set();
   wordIdx = parseInt(localStorage.getItem('dw_idx') || '0');
   if (wordIdx >= WORDS.length) wordIdx = 0;
   try { skipped = new Set(JSON.parse(localStorage.getItem('dw_skipped') || '[]')); } catch(e) {}
+  // If restored position is already drawn/saved, advance to the next undrawn one
+  const savedMap = {};
+  try { JSON.parse(localStorage.getItem('dw_saved') || '[]').forEach(s => { savedMap[s.word.toLowerCase()] = true; }); } catch(e) {}
+  const w = WORDS[wordIdx].word;
+  if (ALREADY_DRAWN.has(w) || savedMap[w.toLowerCase()]) {
+    wordIdx = nextUndrawn(wordIdx, 'forward');
+  }
   updateWord();
   updateProgress();
 })();
@@ -380,8 +394,26 @@ function updateWord() {
   document.getElementById('category-badge').textContent =
     entry.cat.toUpperCase() + (isDone ? ' · ALREADY DRAWN' : '');
   document.getElementById('category-badge').style.color = isDone ? '#3a7a3a' : '#555';
+  const refLink = document.getElementById('ref-link');
+  refLink.href = 'https://www.google.com/search?q=' + encodeURIComponent(word + ' doodle') + '&tbm=isch';
+  refLink.textContent = word.toUpperCase() + ' — REFERENCE IMAGE';
   localStorage.setItem('dw_idx', wordIdx);
   updateProgress();
+}
+
+function nextUndrawn(from, direction) {
+  const savedMap = {};
+  try { JSON.parse(localStorage.getItem('dw_saved') || '[]').forEach(s => { savedMap[s.word.toLowerCase()] = true; }); } catch(e) {}
+  const dir = direction === 'back' ? -1 : 1;
+  let idx = (from + dir + WORDS.length) % WORDS.length;
+  let checked = 0;
+  while (checked < WORDS.length) {
+    const w = WORDS[idx].word;
+    if (!ALREADY_DRAWN.has(w) && !savedMap[w.toLowerCase()]) return idx;
+    idx = (idx + dir + WORDS.length) % WORDS.length;
+    checked++;
+  }
+  return from; // all drawn — stay put
 }
 
 function updateProgress() {
@@ -394,13 +426,13 @@ function skipWord() {
   skipped.add(wordIdx);
   localStorage.setItem('dw_skipped', JSON.stringify([...skipped]));
   clearCanvas();
-  wordIdx = (wordIdx + 1) % WORDS.length;
+  wordIdx = nextUndrawn(wordIdx, 'forward');
   updateWord();
 }
 
 function prevWord() {
   clearCanvas();
-  wordIdx = (wordIdx - 1 + WORDS.length) % WORDS.length;
+  wordIdx = nextUndrawn(wordIdx, 'back');
   updateWord();
 }
 
@@ -456,7 +488,7 @@ function saveDrawing() {
   writeSaved(saved);
   toast(`Saved "${word}"!`);
   clearCanvas();
-  wordIdx = (wordIdx + 1) % WORDS.length;
+  wordIdx = nextUndrawn(wordIdx, 'forward');
   updateWord();
 }
 
