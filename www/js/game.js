@@ -292,12 +292,9 @@ function showHint2() {
   if (!el) return;
   const secondTile = el.querySelector('.hint-tile[data-idx="1"]');
   if (!secondTile) return;
+  secondTile.classList.remove('blank');
+  secondTile.style.animation = 'none';
   secondTile.textContent = secondTile.dataset.ch || '_';
-  secondTile.classList.remove('blank', 'pop', 'reveal-pop');
-  secondTile.classList.add('revealed');
-  // force reflow so the new animation triggers fresh
-  void secondTile.offsetWidth;
-  secondTile.classList.add('reveal-pop');
   soundHint();
 }
 
