@@ -71,14 +71,20 @@ function startGame() {
 
   const timerStart = performance.now();
   const timerInitial = timeLeft;
-  let hintShown = false;
+  let hint1Shown = false, hint2Shown = false;
   timerInterval = setInterval(() => {
     timeLeft = Math.max(0, timerInitial - (performance.now() - timerStart) / 1000);
     updateTimerDisplay(timeLeft, total);
     const elapsed = total - timeLeft;
-    if (!hintShown && CONFIG.showHint && elapsed >= CONFIG.hintTime) {
-      hintShown = true;
-      showHintLetter();
+    if (CONFIG.showHint) {
+      if (!hint1Shown && elapsed >= CONFIG.hintTime) {
+        hint1Shown = true;
+        showHint1();
+      }
+      if (!hint2Shown && elapsed >= CONFIG.hint2Time) {
+        hint2Shown = true;
+        showHint2();
+      }
     }
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
@@ -239,17 +245,61 @@ function updateTimerDisplay(t, total) {
 }
 
 // ── HINT ──────────────────────────────────────────────────────────────────
-function showHintLetter() {
+function _buildHintTiles(word, revealCount) {
   const el = document.getElementById('hintDisplay');
   if (!el) return;
-  const firstLetter = (currentDrawing.word || '').charAt(0).toUpperCase();
-  el.textContent = 'HINT: ' + firstLetter + ' …';
-  el.style.display = 'block';
+  el.innerHTML = '';
+  // Support multi-word: split on spaces, insert spacers between words
+  const chars = word.toUpperCase().split('');
+  let revealIdx = 0;
+  chars.forEach((ch, i) => {
+    if (ch === ' ') {
+      const sp = document.createElement('div');
+      sp.className = 'hint-space';
+      el.appendChild(sp);
+      return;
+    }
+    const tile = document.createElement('div');
+    const isRevealed = revealIdx < revealCount;
+    tile.className = 'hint-tile' + (isRevealed ? ' revealed' : ' blank');
+    tile.textContent = isRevealed ? ch : '_';
+    tile.dataset.idx = revealIdx;
+    tile.dataset.ch = ch;
+    el.appendChild(tile);
+    revealIdx++;
+  });
+  el.style.display = 'flex';
+}
+
+function showHint1() {
+  const word = (currentDrawing.word || '');
+  _buildHintTiles(word, 1);
+  const el = document.getElementById('hintDisplay');
+  if (!el) return;
+  // Stagger pop-in for all tiles
+  const tiles = el.querySelectorAll('.hint-tile');
+  tiles.forEach((t, i) => {
+    t.style.animationDelay = (i * 40) + 'ms';
+    t.classList.add('pop');
+  });
+  soundHint();
+}
+
+function showHint2() {
+  const el = document.getElementById('hintDisplay');
+  if (!el) return;
+  const word = (currentDrawing.word || '').replace(/ /g, '').toUpperCase();
+  const secondTile = el.querySelector('.hint-tile[data-idx="1"]');
+  if (!secondTile) return;
+  secondTile.textContent = word[1] || '_';
+  secondTile.classList.remove('blank');
+  secondTile.classList.add('revealed', 'reveal-pop');
+  soundHint();
 }
 
 function hideHint() {
   const el = document.getElementById('hintDisplay');
-  if (el) { el.style.display = 'none'; el.textContent = ''; }
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
 }
 
 // ── GUESS ─────────────────────────────────────────────────────────────────

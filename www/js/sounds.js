@@ -113,6 +113,23 @@ function soundNodeTap() {
   });
 }
 
+function soundHint() {
+  if (!_soundEnabled(false)) return;
+  _play(ctx => {
+    const t = ctx.currentTime;
+    [1047, 1319].forEach((freq, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq, t + i * 0.09);
+      g.gain.setValueAtTime(0, t + i * 0.09);
+      g.gain.linearRampToValueAtTime(0.10, t + i * 0.09 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.09 + 0.28);
+      o.start(t + i * 0.09); o.stop(t + i * 0.09 + 0.3);
+    });
+  });
+}
+
 function soundTap() {
   if (!_soundEnabled(true)) return;
   _play(ctx => {

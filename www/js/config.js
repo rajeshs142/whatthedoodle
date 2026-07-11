@@ -6,7 +6,8 @@ const CONFIG = {
   drawTime:        15,           // seconds for stroke animation
   guessTime:       20,           // seconds to guess
   showHint:        true,         // reveal first letter at hintTime seconds
-  hintTime:        25,           // elapsed seconds at which hint appears
+  hintTime:        25,           // elapsed seconds at which first hint appears
+  hint2Time:       30,           // elapsed seconds at which second letter reveals
 
   // ── THEME ─────────────────────────────────────────────────────────────────
   theme:           'dark',       // 'light' | 'dark' | 'sepia' | 'ocean' | 'forest'
