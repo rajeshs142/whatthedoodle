@@ -365,24 +365,16 @@
         <label class="cfg-label" for="cfg-sounds">Sounds</label>
       </div>
 </div>
-    <div id="settingsExitPrompt" role="dialog" aria-modal="true" aria-labelledby="settingsExitTitle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
-      <div style="background:var(--surface);color:var(--text);border-radius:14px;padding:28px 24px;max-width:300px;width:90%;text-align:center;">
-        <div id="settingsExitTitle" style="font-size:1rem;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;">APPLY CHANGES?</div>
-        <div style="font-size:0.8rem;color:var(--sub);margin-bottom:24px;">You have unsaved settings changes.</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <button class="overlay-btn primary" onclick="applyCfg()">APPLY &amp; LEAVE</button>
-          <button class="overlay-btn secondary" onclick="settingsDiscard()">DISCARD</button>
-        </div>
-      </div>
-    </div>
     </div><!-- end page-content -->
     <div class="page-footer">
-      <button class="overlay-btn primary" style="width:100%;max-width:340px;align-self:center" onclick="applyCfg()">APPLY</button>
       <div style="display:flex;gap:8px;width:100%;max-width:340px;align-self:center">
-        <button class="overlay-btn secondary" style="flex:1" onclick="showStatsPage('settings')">STATS</button>
-        <button class="overlay-btn secondary" style="flex:1" onclick="showArchivePage('settings')">ARCHIVE</button>
+        <button class="overlay-btn primary" style="flex:1" onclick="applyCfg()">APPLY</button>
+        <button class="overlay-btn secondary" style="flex:1" onclick="settingsDiscard()">CANCEL</button>
       </div>
-      <button class="overlay-btn home" onclick="settingsLeave()">HOME</button>
+      <div style="display:flex;gap:20px;align-self:center">
+        <button style="background:none;border:none;cursor:pointer;font-size:0.6rem;letter-spacing:2px;color:var(--sub);font-family:inherit;padding:2px 0" onclick="showStatsPage('settings')">STATS</button>
+        <button style="background:none;border:none;cursor:pointer;font-size:0.6rem;letter-spacing:2px;color:var(--sub);font-family:inherit;padding:2px 0" onclick="showArchivePage('settings')">ARCHIVE</button>
+      </div>
     </div>
   </div>
 

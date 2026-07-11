@@ -296,15 +296,7 @@ function onSettingChange() {
 }
 
 function settingsLeave() {
-  if (isSettingsDirty()) {
-    const ep = document.getElementById('settingsExitPrompt');
-    ep.style.display = 'flex';
-    requestAnimationFrame(() => { const f = ep.querySelector('button'); if (f) f.focus(); });
-  } else {
-    _previewAnimGen++;
-    if (_settingsApplied) applyTheme(_settingsApplied.theme);
-    showHome();
-  }
+  settingsDiscard();
 }
 
 function settingsDiscard() {
