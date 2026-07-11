@@ -294,6 +294,8 @@ function showHint2() {
   if (!secondTile) return;
   secondTile.classList.remove('blank');
   secondTile.style.animation = 'none';
+  secondTile.style.transform = '';
+  secondTile.style.opacity = '';
   secondTile.textContent = secondTile.dataset.ch || '_';
   soundHint();
 }
