@@ -1033,8 +1033,6 @@ footer a:hover { color: var(--text); }
     });
     kb.appendChild(bottomRow);
   }
-  buildKeyboard();
-
   // Physical keyboard support
   document.addEventListener('keydown', e => {
     if (gameOver) return;
@@ -1091,8 +1089,6 @@ footer a:hover { color: var(--text); }
       }).catch(()=>{});
     }
   };
-
-  revealNext(0);
 
 })();
 </script>
