@@ -3,8 +3,7 @@ function init() {
   try {
     loadCfg();
     const savedTheme = localStorage.getItem('qg_theme');
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    applyTheme(savedTheme || systemTheme);
+    applyTheme(savedTheme || CONFIG.theme);
     bestScore  = parseInt(localStorage.getItem('qg_best')  || '0');
     totalScore = parseInt(localStorage.getItem('qg_score') || '0');
     playingDay        = daysSinceStart();
