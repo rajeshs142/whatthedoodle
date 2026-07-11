@@ -82,6 +82,7 @@ function saveCfg() {
     showNail:        CONFIG.showNail,
     showSwing:       CONFIG.showSwing,
     showSuggestions: CONFIG.showSuggestions,
+    showHint:        CONFIG.showHint,
   })); } catch(e) {}
 }
 
@@ -101,6 +102,7 @@ function loadCfg() {
     if (saved.showNail         !== undefined) CONFIG.showNail         = saved.showNail;
     if (saved.showSwing        !== undefined) CONFIG.showSwing        = saved.showSwing;
     if (saved.showSuggestions  !== undefined) CONFIG.showSuggestions  = saved.showSuggestions;
+    if (saved.showHint         !== undefined) CONFIG.showHint         = saved.showHint;
   } catch(e) {}
 }
 

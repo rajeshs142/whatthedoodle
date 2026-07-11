@@ -4,7 +4,9 @@ const CONFIG = {
   strokeMode:      'forward',    // 'forward'|'reverse'|'random'|'dual-alt'|'dual-pair'|'all'
   canvasEffect:    'none',      // 'none' | 'rotate' | 'zoom-in' | 'zoom-out'
   drawTime:        15,           // seconds for stroke animation
-  guessTime:       10,           // seconds to guess
+  guessTime:       20,           // seconds to guess
+  showHint:        true,         // reveal first letter at hintTime seconds
+  hintTime:        25,           // elapsed seconds at which hint appears
 
   // ── THEME ─────────────────────────────────────────────────────────────────
   theme:           'dark',       // 'light' | 'dark' | 'sepia' | 'ocean' | 'forest'

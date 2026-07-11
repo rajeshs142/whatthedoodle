@@ -3,7 +3,7 @@ let _settingsApplied = null;
 
 function stepCfgGuessTime(delta) {
   const inp = document.getElementById('cfg-guessTime');
-  const val = Math.min(30, Math.max(10, (parseInt(inp.value) || 10) + delta));
+  const val = Math.min(60, Math.max(10, (parseInt(inp.value) || 10) + delta));
   inp.value = val;
   document.getElementById('cfg-guessTime-val').textContent = val + 's';
   onSettingChange();
@@ -131,6 +131,7 @@ function showSettingsPage() {
   document.getElementById('cfg-showThread').checked      = CONFIG.showThread;
   document.getElementById('cfg-showNail').checked        = CONFIG.showNail;
   document.getElementById('cfg-showSwing').checked       = CONFIG.showSwing;
+  document.getElementById('cfg-showHint').checked        = CONFIG.showHint;
   document.getElementById('cfg-showSuggestions').checked = CONFIG.showSuggestions;
   const soundsRow = document.getElementById('cfg-sounds-row');
   if (soundsRow) soundsRow.style.display = CONFIG.sounds === 'off' ? 'none' : '';
@@ -157,6 +158,7 @@ function _settingsSnapshot() {
     theme:           document.getElementById('cfg-theme').value,
     frameStyle:      document.getElementById('cfg-frameStyle').value,
     showSuggestions: document.getElementById('cfg-showSuggestions').checked,
+    showHint:        document.getElementById('cfg-showHint').checked,
     guessTime:       document.getElementById('cfg-guessTime').value,
   };
 }
@@ -168,6 +170,7 @@ function isSettingsDirty() {
          s.theme           !== _settingsApplied.theme           ||
          s.frameStyle      !== _settingsApplied.frameStyle      ||
          s.showSuggestions !== _settingsApplied.showSuggestions ||
+         s.showHint        !== _settingsApplied.showHint        ||
          s.guessTime       !== _settingsApplied.guessTime;
 }
 
@@ -322,6 +325,7 @@ function applyCfg() {
   CONFIG.showThread      = document.getElementById('cfg-showThread').checked;
   CONFIG.showNail        = document.getElementById('cfg-showNail').checked;
   CONFIG.showSwing       = document.getElementById('cfg-showSwing').checked;
+  CONFIG.showHint        = document.getElementById('cfg-showHint').checked;
   CONFIG.showSuggestions = document.getElementById('cfg-showSuggestions').checked;
   const theme = document.getElementById('cfg-theme').value;
   applyTheme(theme);

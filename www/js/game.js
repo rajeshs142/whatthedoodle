@@ -41,6 +41,7 @@ function loadDrawing() {
   inp.value    = '';
   inp.disabled = false;
   setStatus('');
+  hideHint();
   resetCanvasWrap();
   clearCanvas();
   const _sep = document.getElementById('dayLabelSep');
@@ -70,9 +71,15 @@ function startGame() {
 
   const timerStart = performance.now();
   const timerInitial = timeLeft;
+  let hintShown = false;
   timerInterval = setInterval(() => {
     timeLeft = Math.max(0, timerInitial - (performance.now() - timerStart) / 1000);
     updateTimerDisplay(timeLeft, total);
+    const elapsed = total - timeLeft;
+    if (!hintShown && CONFIG.showHint && elapsed >= CONFIG.hintTime) {
+      hintShown = true;
+      showHintLetter();
+    }
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
       timerInterval = null;
@@ -231,6 +238,20 @@ function updateTimerDisplay(t, total) {
   }
 }
 
+// ── HINT ──────────────────────────────────────────────────────────────────
+function showHintLetter() {
+  const el = document.getElementById('hintDisplay');
+  if (!el) return;
+  const firstLetter = (currentDrawing.word || '').charAt(0).toUpperCase();
+  el.textContent = 'HINT: ' + firstLetter + ' …';
+  el.style.display = 'block';
+}
+
+function hideHint() {
+  const el = document.getElementById('hintDisplay');
+  if (el) { el.style.display = 'none'; el.textContent = ''; }
+}
+
 // ── GUESS ─────────────────────────────────────────────────────────────────
 function isCorrectGuess(guess) {
   const g       = guess.trim().toUpperCase();
@@ -267,6 +288,7 @@ function submitGuess() {
       addToHistory(currentDrawing.word, finalScore, true);
     }
     stopMic();
+    hideHint();
     setTimeout(() => showResult(true, finalScore), 800);
 
   } else {
@@ -290,6 +312,7 @@ function timeOut() {
   gameOver = true;
   document.getElementById('guessInput').disabled = true;
   stopMic();
+  hideHint();
   setStatus('TIME\'S UP!', 'wrong');
   soundTimeUp();
   revealedStrokes = currentDrawing.strokes.length;
