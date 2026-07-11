@@ -93,7 +93,7 @@
 /* CANVAS AREA */
 .canvas-wrap {
   flex: 1; display: flex; align-items: center; justify-content: center;
-  min-height: 0;
+  min-height: 0; position: relative;
 }
 #drawCanvas {
   background: var(--canvas-bg);
@@ -449,7 +449,11 @@
 /* HINT TILES */
 #hintDisplay {
   display: none; justify-content: center; align-items: center;
-  gap: 5px; flex-shrink: 0; flex-wrap: wrap; padding: 4px 0;
+  gap: 5px; flex-wrap: wrap; padding: 6px 8px;
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.45); border-radius: 8px;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
 }
 #hintDisplay.active { display: flex; }
 .hint-tile {
