@@ -448,11 +448,10 @@
 
 /* HINT TILES */
 #hintDisplay {
-  display: flex; justify-content: center; align-items: center;
-  gap: 5px; flex-shrink: 0; flex-wrap: wrap; padding: 2px 0 4px;
-  min-height: 42px; visibility: hidden;
+  display: none; justify-content: center; align-items: center;
+  gap: 5px; flex-shrink: 0; flex-wrap: wrap; padding: 4px 0;
 }
-#hintDisplay.active { visibility: visible; }
+#hintDisplay.active { display: flex; }
 .hint-tile {
   width: 28px; height: 32px; border-radius: 5px;
   display: flex; align-items: center; justify-content: center;

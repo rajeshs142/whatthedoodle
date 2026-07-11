@@ -293,6 +293,7 @@ function showHint2() {
   const secondTile = el.querySelector('.hint-tile[data-idx="1"]');
   if (!secondTile) return;
   secondTile.classList.remove('blank');
+  secondTile.classList.add('revealed');
   secondTile.style.animation = 'none';
   secondTile.style.transform = '';
   secondTile.style.opacity = '';
