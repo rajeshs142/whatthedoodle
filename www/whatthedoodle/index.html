@@ -829,26 +829,9 @@ footer a:hover { color: var(--text); }
     return;
   }
 
-  // ── Try to open in app first (Android App Links) ───────────────────────
-  // intent:// URI falls back to Play Store if app not installed
-  const intentUrl = 'intent://playdropstack.com/whatthedoodle/?doodle=' +
-    encodeURIComponent(encoded) +
-    '#Intent;scheme=https;package=com.rajeshs142.whatthedoodle;' +
-    'S.browser_fallback_url=' + encodeURIComponent(location.href) + ';end';
-  // Only attempt on Android (intent:// is Android-only)
-  const isAndroid = /android/i.test(navigator.userAgent);
-  if (isAndroid) {
-    // Try intent redirect; if app is installed it opens immediately.
-    // We show the web play page after a brief delay as fallback.
-    const link = document.createElement('a');
-    link.href = intentUrl;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
   // ── Show play mode ─────────────────────────────────────────────────────
+  // Note: Android App Links handle deep-linking into the app automatically
+  // via assetlinks.json + intent-filter — no JS redirect needed.
   document.getElementById('playMode').classList.add('active');
 
   // ── Decode payload ─────────────────────────────────────────────────────
@@ -1059,8 +1042,6 @@ footer a:hover { color: var(--text); }
     if (gameOver) return;
     gameOver = true; won = didWin;
     animActive = false;
-    cancelAnimationFrame(timerRaf);
-    timerFill.style.width = didWin ? timerFill.style.width : '0%';
     // draw all strokes
     const c=setupCtx(); for(let i=0;i<strokes.length;i++) c.stroke(new Path2D(strokes[i])); c.restore();
     goBtn.disabled = true;
