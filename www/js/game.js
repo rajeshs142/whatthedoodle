@@ -288,12 +288,14 @@ function showHint1() {
 function showHint2() {
   const el = document.getElementById('hintDisplay');
   if (!el) return;
-  const word = (currentDrawing.word || '').replace(/ /g, '').toUpperCase();
   const secondTile = el.querySelector('.hint-tile[data-idx="1"]');
   if (!secondTile) return;
-  secondTile.textContent = word[1] || '_';
-  secondTile.classList.remove('blank');
-  secondTile.classList.add('revealed', 'reveal-pop');
+  secondTile.textContent = secondTile.dataset.ch || '_';
+  secondTile.classList.remove('blank', 'pop', 'reveal-pop');
+  secondTile.classList.add('revealed');
+  // force reflow so the new animation triggers fresh
+  void secondTile.offsetWidth;
+  secondTile.classList.add('reveal-pop');
   soundHint();
 }
 
