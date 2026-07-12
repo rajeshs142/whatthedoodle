@@ -89,7 +89,7 @@ function buildCalendarGrid() {
   if (shown === 0) {
     const empty = document.createElement('div');
     empty.className = 'hist-empty';
-    empty.textContent = calFilter === 'completed' ? 'NO PLAYED DAYS YET' : 'NO UNPLAYED DAYS';
+    empty.textContent = calFilter === 'completed' ? 'NO WINS YET' : 'ALL DAYS WON';
     body.appendChild(empty);
   }
 }
