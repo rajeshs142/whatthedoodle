@@ -8,6 +8,10 @@ function showArchivePage(returnPage) {
   });
   buildCalendarGrid();
   showPage('archive');
+  requestAnimationFrame(() => {
+    const todayRow = document.querySelector('#calendarBody .cal-row.today');
+    if (todayRow) todayRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
 }
 
 let calFilter = 'all';

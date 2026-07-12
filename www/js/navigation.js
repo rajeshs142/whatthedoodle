@@ -844,7 +844,7 @@ function startDailyMode() {
   playingSlot        = 0;
   currentDrawingIdx  = getDrawingIdx(playingDay, 0);
   if (firstIncompleteSlot(playingDay) >= CONFIG.gamesPerDay) {
-    showDaySummary();
+    showArchivePage('home');
   } else {
     loadDrawing();
   }
