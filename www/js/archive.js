@@ -35,9 +35,9 @@ function buildCalendarGrid() {
 
   for (let d = today; d >= 0; d--) {
     const slots    = p[d] || Array(CONFIG.gamesPerDay).fill(null);
-    const complete = slots.every(s => s !== null);
-    if (calFilter === 'completed'  && !complete) continue;
-    if (calFilter === 'incomplete' &&  complete) continue;
+    const won      = slots.some(s => s != null && s > 0);
+    if (calFilter === 'completed'  && !won) continue;
+    if (calFilter === 'incomplete' &&  won) continue;
 
     const played = slots.filter(s => s != null).length;
     const total  = slots.reduce((sum, s) => sum + (s || 0), 0);
