@@ -93,7 +93,7 @@
 /* CANVAS AREA */
 .canvas-wrap {
   flex: 1; display: flex; align-items: center; justify-content: center;
-  min-height: 0; position: relative;
+  min-height: 0;
 }
 #drawCanvas {
   background: var(--canvas-bg);
@@ -412,8 +412,8 @@
 #status {
   text-align: center; font-size: 0.78rem; font-weight: 700;
   letter-spacing: 2px; text-transform: uppercase; color: var(--sub);
-  min-height: 32px; display: flex; align-items: center; justify-content: center;
-  gap: 6px; flex-shrink: 0; margin-top: 6px;
+  height: 42px; display: flex; align-items: center; justify-content: center;
+  gap: 6px; flex-shrink: 0;
   overflow: hidden;
 }
 #status:not(:empty):not(.chips) {
@@ -448,14 +448,11 @@
 
 /* HINT TILES */
 #hintDisplay {
-  display: none; justify-content: center; align-items: center;
-  gap: 5px; flex-wrap: wrap; padding: 6px 8px;
-  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.45); border-radius: 8px;
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  pointer-events: none;
+  display: flex; justify-content: center; align-items: center;
+  gap: 5px; flex-shrink: 0; flex-wrap: wrap;
+  height: 42px; visibility: hidden;
 }
-#hintDisplay.active { display: flex; }
+#hintDisplay.active { visibility: visible; }
 .hint-tile {
   width: 28px; height: 32px; border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
