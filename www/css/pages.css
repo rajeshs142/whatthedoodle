@@ -187,32 +187,26 @@
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  /* Result: painting left, info right */
-  #page-result .page-content {
-    flex-direction: row; align-items: center;
-    padding: 6px 16px; gap: 16px; overflow: hidden;
-  }
-  #page-result #resultSvgWrap { flex-shrink: 0; }
-  #page-result .page-footer {
-    flex-direction: row; flex-wrap: wrap; gap: 6px; padding: 6px 12px;
-  }
+  /* Result: vertical stack, shrunk to fit */
+  #page-result .page-content { padding: 4px 16px; gap: 4px; }
+  #page-result #resultSvgWrap { transform: scale(0.65); transform-origin: center top; margin-bottom: -30px; }
+  #page-result .reveal-answer { font-size: 0.9rem; padding: 4px 10px; }
+  #page-result .result-stars { font-size: 0.9rem; }
+  #page-result .overlay-stats { gap: 16px; }
+  #page-result .stat-val { font-size: 1.2rem; }
+  #page-result .page-footer { flex-direction: row; gap: 6px; padding: 6px 12px; }
   #page-result .page-footer > div { flex-direction: row !important; gap: 6px; width: auto; flex: 1; }
   #page-result .page-footer .overlay-btn { height: 36px; font-size: 0.65rem; }
   #page-result .page-footer .summary-btn-row { gap: 6px; }
-  #page-result .reveal-answer { font-size: 1rem; padding: 5px 12px; }
-  #page-result .result-stars { font-size: 1rem; }
 
-  /* Summary: painting left, content right */
-  #page-summary .page-content { flex-direction: row; align-items: center; padding: 8px 16px; gap: 16px; }
-  #page-summary .page-content > .summary-result-label { font-size: clamp(1rem, 3vh, 1.4rem); letter-spacing: 3px; }
-  .summary-frames { flex-direction: column; gap: 8px; padding: 0; width: auto; flex-shrink: 0; }
-  .summary-painting { width: clamp(80px, 22vh, 160px); margin-bottom: 0; }
-  /* Right column: label + stats stacked */
-  #page-summary .overlay-stats { flex-direction: column; gap: 6px; align-items: flex-start; }
-  #page-summary .stat { flex-direction: row; gap: 8px; align-items: baseline; }
-  #page-summary .stat-val { font-size: clamp(1rem, 3vh, 1.6rem); }
+  /* Summary: vertical stack, shrunk to fit */
+  #page-summary .page-content { padding: 4px 16px; gap: 4px; }
+  #page-summary .page-content > .summary-result-label { font-size: 0.8rem; letter-spacing: 2px; }
+  .summary-frames { gap: 8px; padding: 4px 0; }
+  .summary-painting { width: clamp(70px, 18vh, 120px); }
+  #page-summary .overlay-stats { gap: 16px; }
+  #page-summary .stat-val { font-size: 1.2rem; }
   #page-summary .stat-label { font-size: 0.55rem; }
-  /* Footer buttons in a row */
   #page-summary .page-footer { flex-direction: row; flex-wrap: wrap; gap: 6px; padding: 6px 12px; }
   #page-summary .page-footer > div { flex-direction: row !important; gap: 6px; width: auto; flex: 1; }
   #page-summary .page-footer .overlay-btn { height: 36px; font-size: 0.65rem; }
