@@ -265,17 +265,20 @@ const WORDS = WORDS_FLAT;
 let wordIdx = 0;
 let skipped = new Set();
 
-// Init: restore position, skip already-drawn words by default
+// Init: restore position, skip already-drawn words unless explicitly requested
 (function init() {
   wordIdx = parseInt(localStorage.getItem('dw_idx') || '0');
   if (wordIdx >= WORDS.length) wordIdx = 0;
   try { skipped = new Set(JSON.parse(localStorage.getItem('dw_skipped') || '[]')); } catch(e) {}
-  // If restored position is already drawn/saved, advance to the next undrawn one
-  const savedMap = {};
-  try { JSON.parse(localStorage.getItem('dw_saved') || '[]').forEach(s => { savedMap[s.word.toLowerCase()] = true; }); } catch(e) {}
-  const w = WORDS[wordIdx].word;
-  if (ALREADY_DRAWN.has(w) || savedMap[w.toLowerCase()]) {
-    wordIdx = nextUndrawn(wordIdx, 'forward');
+  const explicit = localStorage.getItem('dw_explicit') === '1';
+  localStorage.removeItem('dw_explicit');
+  if (!explicit) {
+    const savedMap = {};
+    try { JSON.parse(localStorage.getItem('dw_saved') || '[]').forEach(s => { savedMap[s.word.toLowerCase()] = true; }); } catch(e) {}
+    const w = WORDS[wordIdx].word;
+    if (ALREADY_DRAWN.has(w) || savedMap[w.toLowerCase()]) {
+      wordIdx = nextUndrawn(wordIdx, 'forward');
+    }
   }
   // updateWord() is called from initCanvas() after canvas is sized
   updateProgress();

@@ -428,11 +428,13 @@ function render() {
 
 // ── ACTIONS ───────────────────────────────────────────────────────────────
 function goDrawWord(word) {
-  // Jump draw_words to this word via localStorage, then open it
   const WORDS_FLAT = [];
   CATALOGUE.forEach(({ cat, words }) => words.forEach(w => WORDS_FLAT.push(w)));
   const idx = WORDS_FLAT.findIndex(w => w.toLowerCase() === word.toLowerCase());
-  if (idx >= 0) localStorage.setItem('dw_idx', idx);
+  if (idx >= 0) {
+    localStorage.setItem('dw_idx', idx);
+    localStorage.setItem('dw_explicit', '1');
+  }
   window.open('draw_words.html', '_blank');
 }
 

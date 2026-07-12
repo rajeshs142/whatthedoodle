@@ -238,7 +238,8 @@
   <!-- PAGE: SETTINGS -->
   <div id="page-settings" class="page" role="main" aria-label="Settings">
     <div class="page-header">
-      <span class="page-header-title" style="text-align:center;width:100%">SETTINGS</span>
+      <span class="page-header-title" style="position:absolute;left:50%;transform:translateX(-50%)">SETTINGS</span>
+      <button class="page-header-btn" style="margin-left:auto" onclick="showStatsPage('settings')">STATS</button>
     </div>
     <div class="page-content" style="gap:14px">
     <div class="preview-wrap">
@@ -371,7 +372,6 @@
         <button class="overlay-btn primary" style="flex:1" onclick="applyCfg()">APPLY</button>
         <button class="overlay-btn secondary" style="flex:1" onclick="settingsDiscard()">CANCEL</button>
       </div>
-      <button class="overlay-btn secondary" style="width:100%;max-width:340px;align-self:center" onclick="showStatsPage('settings')">STATS</button>
     </div>
   </div>
 
