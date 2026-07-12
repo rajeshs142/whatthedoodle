@@ -1,4 +1,15 @@
 // ── INIT ──────────────────────────────────────────────────────────────────
+(function applySkipList() {
+  try {
+    const skipped = new Set(JSON.parse(localStorage.getItem('dw_skipped') || '[]'));
+    if (skipped.size && typeof DRAWINGS !== 'undefined') {
+      for (let i = DRAWINGS.length - 1; i >= 0; i--) {
+        if (skipped.has(DRAWINGS[i].word)) DRAWINGS.splice(i, 1);
+      }
+    }
+  } catch(e) {}
+})();
+
 function init() {
   try {
     loadCfg();
