@@ -187,6 +187,21 @@
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
+  /* Result: painting left, info right */
+  #page-result .page-content {
+    flex-direction: row; align-items: center;
+    padding: 6px 16px; gap: 16px; overflow: hidden;
+  }
+  #page-result #resultSvgWrap { flex-shrink: 0; }
+  #page-result .page-footer {
+    flex-direction: row; flex-wrap: wrap; gap: 6px; padding: 6px 12px;
+  }
+  #page-result .page-footer > div { flex-direction: row !important; gap: 6px; width: auto; flex: 1; }
+  #page-result .page-footer .overlay-btn { height: 36px; font-size: 0.65rem; }
+  #page-result .page-footer .summary-btn-row { gap: 6px; }
+  #page-result .reveal-answer { font-size: 1rem; padding: 5px 12px; }
+  #page-result .result-stars { font-size: 1rem; }
+
   /* Summary: painting left, content right */
   #page-summary .page-content { flex-direction: row; align-items: center; padding: 8px 16px; gap: 16px; }
   #page-summary .page-content > .summary-result-label { font-size: clamp(1rem, 3vh, 1.4rem); letter-spacing: 3px; }
