@@ -180,6 +180,38 @@ function updateSettingsPreview() {
   const frame = document.getElementById('settingsPreviewFrame');
   frame.className = 'preview-frame' + (frameStyle !== 'none' ? ' frame-' + frameStyle : '');
   applyTheme(document.getElementById('cfg-theme').value);
+  _updatePreviewHint();
+  _updatePreviewSugg();
+}
+
+function _updatePreviewHint() {
+  const el = document.getElementById('previewHint');
+  if (!el) return;
+  const show = document.getElementById('cfg-showHint').checked;
+  el.innerHTML = '';
+  if (!show) return;
+  // Show a sample word: "CAT" with first letter revealed
+  const word = 'CAT';
+  word.split('').forEach((ch, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'preview-hint-tile' + (i === 0 ? ' revealed' : '');
+    tile.textContent = i === 0 ? ch : '_';
+    el.appendChild(tile);
+  });
+}
+
+function _updatePreviewSugg() {
+  const el = document.getElementById('previewSugg');
+  if (!el) return;
+  const show = document.getElementById('cfg-showSuggestions').checked;
+  el.innerHTML = '';
+  if (!show) return;
+  ['CATCH', 'CATS', 'CATTLE'].forEach(w => {
+    const chip = document.createElement('div');
+    chip.className = 'preview-sugg-chip';
+    chip.textContent = w;
+    el.appendChild(chip);
+  });
 }
 
 let _previewAnimGen = 0;
