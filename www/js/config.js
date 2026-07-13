@@ -5,9 +5,9 @@ const CONFIG = {
   canvasEffect:    'none',      // 'none' | 'rotate' | 'zoom-in' | 'zoom-out'
   drawTime:        15,           // seconds for stroke animation
   guessTime:       25,           // seconds to guess
-  showHint:        false,        // reveal first letter at hintTime seconds
-  hintTime:        25,           // elapsed seconds at which first hint appears
-  hint2Time:       30,           // elapsed seconds at which second letter reveals
+  showHint:        false,        // reveal first letter when hintTime seconds remain
+  hintTime:        10,           // seconds remaining when first hint appears
+  hint2Time:       5,            // seconds remaining when second letter reveals
 
   // ── THEME ─────────────────────────────────────────────────────────────────
   theme:           'dark',       // 'light' | 'dark' | 'sepia' | 'ocean' | 'forest'

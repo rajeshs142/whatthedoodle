@@ -10,6 +10,10 @@ function _ctx() {
   return _audioCtx;
 }
 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && _audioCtx) _audioCtx.suspend();
+});
+
 function _soundEnabled(fullOnly) {
   if (CONFIG.sounds === 'off') return false;
   if (fullOnly && CONFIG.sounds === 'minimal') return false;

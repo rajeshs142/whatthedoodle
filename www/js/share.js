@@ -6,12 +6,12 @@ async function _nativeShare(title, text, url) {
   const plugin = window.Capacitor?.Plugins?.Share;
   if (plugin) {
     try {
-      await plugin.share({ title, text: text ? text + '\n' + url : url, url, dialogTitle: title });
+      await plugin.share({ title, text: text ? text + '\n' + url : url, dialogTitle: title });
       return true;
     } catch(e) { return false; }
   }
   if (navigator.share) {
-    try { await navigator.share({ title, text, url }); return true; } catch(e) { return false; }
+    try { await navigator.share({ title, text: text ? text + '\n' + url : url }); return true; } catch(e) { return false; }
   }
   return false;
 }

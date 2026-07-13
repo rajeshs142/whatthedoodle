@@ -63,7 +63,11 @@ public class MainActivity extends BridgeActivity {
         if (requestCode == SPEECH_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
             ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
             if (results != null && !results.isEmpty()) {
-                String word = results.get(0).trim().split("\\s+")[0].toUpperCase();
+                String[] parts = results.get(0).trim().split("\\s+");
+                int take = Math.min(parts.length, 4);
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < take; i++) { if (i > 0) sb.append(' '); sb.append(parts[i]); }
+                String word = sb.toString().toUpperCase();
                 bridge.getWebView().post(() ->
                     bridge.getWebView().evaluateJavascript("onSpeechResult('" + word + "')", null)
                 );

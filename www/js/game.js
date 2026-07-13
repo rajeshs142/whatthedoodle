@@ -75,13 +75,12 @@ function startGame() {
   timerInterval = setInterval(() => {
     timeLeft = Math.max(0, timerInitial - (performance.now() - timerStart) / 1000);
     updateTimerDisplay(timeLeft, total);
-    const elapsed = total - timeLeft;
     if (CONFIG.showHint) {
-      if (!hint1Shown && elapsed >= CONFIG.hintTime) {
+      if (!hint1Shown && timeLeft <= CONFIG.hintTime) {
         hint1Shown = true;
         showHint1();
       }
-      if (!hint2Shown && elapsed >= CONFIG.hint2Time) {
+      if (!hint2Shown && timeLeft <= CONFIG.hint2Time) {
         hint2Shown = true;
         showHint2();
       }
