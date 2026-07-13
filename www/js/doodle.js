@@ -567,19 +567,23 @@ function showDoodleSummary() {
   const wonCount  = _doodleResults.filter(r => r.won).length;
   const totalPts  = _doodleResults.reduce((a, r) => a + (r.won ? r.score : 0), 0);
 
+  document.getElementById('summaryTitle').textContent = "FRIEND'S DOODLE";
   const cat = document.getElementById('summaryCategory');
-  if (wonCount === n) {
-    document.getElementById('summaryTitle').textContent = 'CLEAN SWEEP!';
-    cat.textContent = 'WELL DONE!'; cat.style.color = 'var(--correct)';
-  } else if (wonCount > 0) {
-    document.getElementById('summaryTitle').textContent = 'WELL PLAYED!';
-    cat.textContent = `${wonCount} OF ${n} CORRECT`; cat.style.color = 'var(--correct)';
-  } else {
-    document.getElementById('summaryTitle').textContent = 'BETTER LUCK!';
-    cat.textContent = 'KEEP TRYING'; cat.style.color = 'var(--wrong)';
-  }
+  const resultText = wonCount === n ? 'CLEAN SWEEP!' : wonCount > 0 ? 'WELL PLAYED!' : 'BETTER LUCK!';
+  cat.textContent  = resultText;
+  cat.style.color  = wonCount > 0 ? 'var(--correct)' : 'var(--wrong)';
+
+  document.getElementById('summaryTotalPts').closest('.stat').style.display = '';
   document.getElementById('summaryTotalPts').textContent = totalPts;
-  document.getElementById('summaryWon').textContent      = `${wonCount}/${n}`;
+  document.getElementById('summaryPtsLabel').textContent = 'Points';
+  const wonStatEl = document.getElementById('summaryWon').closest('.stat');
+  if (n === 1) {
+    wonStatEl.style.display = 'none';
+  } else {
+    wonStatEl.style.display = '';
+    document.getElementById('summaryWon').textContent      = `${wonCount}/${n}`;
+    document.getElementById('summaryWonLabel').textContent = 'Correct';
+  }
 
   const items = _doodleResults.map((r, i) => {
     const drawing = { strokes: r.strokes };
