@@ -603,10 +603,14 @@ function showDoodleSummary() {
   framesEl.innerHTML = items.join('');
   wireSummaryHover(framesEl);
 
-  document.getElementById('summaryDayBtnsWon').style.display  = 'none';
-  document.getElementById('summaryDayBtnsFail').style.display = 'none';
-  document.getElementById('playAgainBtn').style.display      = 'none';
-  document.getElementById('summaryDoodleBtns').style.display = 'flex';
+  document.getElementById('summaryDayBtnsWon').style.display      = 'none';
+  document.getElementById('summaryDayBtnsFail').style.display     = 'none';
+  document.getElementById('summaryDoodleBtns').style.display      = 'flex';
+  document.getElementById('summaryCatBtnsWon').style.display      = 'none';
+  document.getElementById('summaryCatBtnsFail').style.display     = 'none';
+  document.getElementById('summaryLevelBtnsPreview').style.display = 'none';
+  document.getElementById('summaryLevelBtnsWon').style.display    = 'none';
+  document.getElementById('summaryLevelBtnsFail').style.display   = 'none';
 
   showPage('summary');
 }
