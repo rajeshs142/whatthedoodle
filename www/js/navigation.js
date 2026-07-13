@@ -32,6 +32,7 @@ window.addEventListener('popstate', (e) => {
   timerInterval = null;
   _previewAnimGen++;
   if (onSettings && _settingsApplied) applyTheme(_settingsApplied.theme);
+  if (isDoodleMode) exitDoodleMode();
 
   const target = e.state?.page;
   const _navigable = ['levels', 'summary', 'doodles', 'settings', 'stats', 'archive', 'create', 'doodle-result', 'categories', 'cat-levels'];
@@ -75,6 +76,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 function showHome() {
+  if (isDoodleMode) exitDoodleMode();
   gameMode = 'levels';
   showPage('home');
   renderHomeBg();

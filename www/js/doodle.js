@@ -475,11 +475,11 @@ function loadDoodleFromUrl(encoded) {
   _doodleQueue    = payloads;
   _doodleQueueIdx = 0;
   _doodleResults  = [];
-  _doodleUrl      = window.location.href;
+  _doodleUrl      = 'https://playdropstack.com/whatthedoodle/?doodle=' + encoded;
   _savedDrawTime  = CONFIG.drawTime;
   _savedGuessTime = CONFIG.guessTime;
   isDoodleMode    = true;
-  showDoodleLobby();
+  playDoodleFromQueue();
   return true;
 }
 

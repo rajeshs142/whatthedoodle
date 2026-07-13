@@ -120,5 +120,5 @@ function shareLevel() {
 
 function playRealGame() {
   closeShareSheet();
-  window.location.href = 'https://playdropstack.com/whatthedoodle/';
+  showHome();
 }
