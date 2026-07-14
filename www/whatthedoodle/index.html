@@ -755,6 +755,15 @@ footer a:hover { color: var(--text); }
   box-shadow: 0 0 24px var(--pglow); width: min(300px, 88vw);
 }
 .pr-share-btn:hover { opacity: 0.88; }
+.pr-next-btn {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--green); color: #111; border: none; border-radius: 12px;
+  font-family: inherit; font-size: 0.8rem; font-weight: 800;
+  letter-spacing: 2px; text-transform: uppercase;
+  padding: 16px 28px; cursor: pointer; transition: opacity 0.15s;
+  width: min(300px, 88vw);
+}
+.pr-next-btn:hover { opacity: 0.88; }
 .pr-divider {
   width: min(300px, 88vw); height: 1px; background: var(--border);
 }
@@ -763,6 +772,40 @@ footer a:hover { color: var(--text); }
   text-transform: uppercase; color: var(--sub);
 }
 .pr-download-text strong { color: var(--text); }
+
+/* summary overlay */
+#playSummary {
+  display: none; position: absolute; inset: 0; z-index: 10;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; padding: 32px 24px;
+  background: rgba(20,18,16,0.96);
+  text-align: center;
+}
+#playSummary.show { display: flex; }
+.ps-summary-title {
+  font-size: 2rem; font-weight: 800; letter-spacing: 4px;
+  text-transform: uppercase; line-height: 1;
+}
+.ps-summary-title.won  { color: var(--green); }
+.ps-summary-title.lost { color: #e05c5c; }
+.ps-result-list {
+  display: flex; flex-direction: column; gap: 10px;
+  width: min(300px, 88vw);
+}
+.ps-result-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg2, #1b1916); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 16px;
+}
+.ps-result-dot {
+  font-size: 1rem; font-weight: 800; flex-shrink: 0;
+}
+.ps-result-dot.won  { color: var(--green); }
+.ps-result-dot.lost { color: #e05c5c; }
+.ps-result-word {
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text);
+}
 </style>
 
 <div id="playMode">
@@ -794,11 +837,36 @@ footer a:hover { color: var(--text); }
 
   <div class="pm-keyboard" id="pmKeyboard"></div>
 
-  <!-- result overlay (shown after game ends) -->
+  <!-- result overlay (shown after each doodle) -->
   <div id="playResult">
     <div class="pr-outcome" id="prOutcome"></div>
     <div class="pr-word" id="prWord"></div>
+    <button class="pr-next-btn" id="prNextBtn" onclick="playNext()" style="display:none">NEXT DOODLE →</button>
     <button class="pr-share-btn" id="playShareBtn" onclick="playShare()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16c-.8 0-1.5.3-2 .8l-7.3-4.2c0-.2.1-.4.1-.6s0-.4-.1-.6L16 7.2c.5.5 1.2.8 2 .8 1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3c0 .2 0 .4.1.6L7.8 9.8C7.3 9.3 6.6 9 5.8 9c-1.7 0-3 1.3-3 3s1.3 3 3 3c.8 0 1.5-.3 2-.8l7.3 4.2c0 .2-.1.4-.1.6 0 1.6 1.3 2.9 2.9 2.9s2.9-1.3 2.9-2.9-1.2-3-2.8-3z"/></svg>
+      Share result
+    </button>
+    <div class="pr-divider"></div>
+    <p class="pr-download-text">Play <strong>200 more levels</strong> in the app</p>
+    <a href="https://play.google.com/store/apps/details?id=com.rajeshs142.whatthedoodle" class="btn-play">
+      <svg class="btn-play-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M48 432.7V79.3c0-9.9 11-15.9 19.3-10.5l362.5 176.7c8 3.9 8 15.1 0 19L67.3 443.2C59 448.6 48 442.6 48 432.7z" fill="#4CAF50"/>
+        <path d="M48 79.3v353.4L284.8 256 48 79.3z" fill="#81C784"/>
+        <path d="M48 432.7L284.8 256 429.8 344.5 67.3 443.2C59 448.6 48 442.6 48 432.7z" fill="#F44336"/>
+        <path d="M48 79.3L284.8 256 429.8 167.5 67.3 68.8C59 63.4 48 69.4 48 79.3z" fill="#FFCA28"/>
+      </svg>
+      <div class="btn-play-text">
+        <span class="line-get">GET IT ON</span>
+        <span class="line-store">Google Play</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- summary overlay (shown after all doodles played) -->
+  <div id="playSummary">
+    <div class="ps-summary-title" id="psSummaryTitle"></div>
+    <div class="ps-result-list" id="psSummaryList"></div>
+    <button class="pr-share-btn" onclick="playShare()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16c-.8 0-1.5.3-2 .8l-7.3-4.2c0-.2.1-.4.1-.6s0-.4-.1-.6L16 7.2c.5.5 1.2.8 2 .8 1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3c0 .2 0 .4.1.6L7.8 9.8C7.3 9.3 6.6 9 5.8 9c-1.7 0-3 1.3-3 3s1.3 3 3 3c.8 0 1.5-.3 2-.8l7.3 4.2c0 .2-.1.4-.1.6 0 1.6 1.3 2.9 2.9 2.9s2.9-1.3 2.9-2.9-1.2-3-2.8-3z"/></svg>
       Share result
     </button>
@@ -829,25 +897,20 @@ footer a:hover { color: var(--text); }
     return;
   }
 
-  // ── Show play mode ─────────────────────────────────────────────────────
-  // Note: Android App Links handle deep-linking into the app automatically
-  // via assetlinks.json + intent-filter — no JS redirect needed.
   document.getElementById('playMode').classList.add('active');
 
-  // ── Decode payload ─────────────────────────────────────────────────────
-  let payload;
+  // ── Decode queue ───────────────────────────────────────────────────────
+  let queue;
   try {
     const json = typeof LZString !== 'undefined'
       ? LZString.decompressFromEncodedURIComponent(encoded)
       : decodeURIComponent(escape(atob(encoded)));
-    payload = JSON.parse(json);
+    const payload = JSON.parse(json);
+    queue = Array.isArray(payload) ? payload : [payload];
   } catch(e) {
     document.getElementById('pmStatus').textContent = 'Invalid doodle link.';
     return;
   }
-
-  const doodle  = Array.isArray(payload) ? payload[0] : payload;
-  const strokes = doodle.s || doodle.strokes || [];
 
   function deobfuscate(hex) {
     const r = [];
@@ -855,13 +918,16 @@ footer a:hover { color: var(--text); }
       r.push(String.fromCharCode(parseInt(hex.slice(i, i+2), 16) ^ 42));
     return r.join('');
   }
-  const rawWord   = doodle.w ? deobfuscate(doodle.w) : (doodle.word || '');
-  const answer    = rawWord.toLowerCase().trim();
+
   const sharedUrl = location.href;
   const DRAW_MS   = 15000;
+  const results   = []; // { won, word } per doodle
+  let   queueIdx  = 0;
 
-  let gameOver = false;
-  let won      = false;
+  // per-doodle state (reset in loadDoodle)
+  let strokes, answer, sampled, strokeDurMs, bounds;
+  let gameOver = false, won = false, animActive = false;
+  const done = new Set();
 
   // ── Canvas ─────────────────────────────────────────────────────────────
   const canvas = document.getElementById('playCanvas');
@@ -871,6 +937,7 @@ footer a:hover { color: var(--text); }
     const wrap = canvas.parentElement;
     const sz = Math.min(wrap.clientWidth - 32, wrap.clientHeight - 16, 420);
     canvas.width = canvas.height = Math.max(sz, 160);
+    if (animActive || gameOver) redrawFull();
   }
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
@@ -889,7 +956,6 @@ footer a:hover { color: var(--text); }
     }
     return isFinite(minX)?{minX,minY,maxX,maxY}:null;
   }
-  const bounds = getBounds(strokes);
 
   function setupCtx() {
     ctx.save();
@@ -906,6 +972,12 @@ footer a:hover { color: var(--text); }
       ctx.lineWidth=6/(sc*fit);
     }
     return ctx;
+  }
+
+  function redrawFull() {
+    const c=setupCtx();
+    for(let i=0;i<strokes.length;i++) c.stroke(new Path2D(strokes[i]));
+    c.restore();
   }
 
   function samplePath(pathStr) {
@@ -941,11 +1013,6 @@ footer a:hover { color: var(--text); }
     return d.trim();
   }
 
-  const sampled     = strokes.map(samplePath);
-  const strokeDurMs = strokes.length > 0 ? DRAW_MS / strokes.length : DRAW_MS;
-  const done        = new Set();
-  let   animActive  = false;
-
   function drawFrame(doneSet, sampledPath, progress) {
     const c = setupCtx();
     for (const i of doneSet) c.stroke(new Path2D(strokes[i]));
@@ -956,7 +1023,7 @@ footer a:hover { color: var(--text); }
 
   function revealNext(step) {
     if (!animActive || step >= strokes.length) {
-      if (animActive) { const c=setupCtx(); for(let i=0;i<strokes.length;i++) c.stroke(new Path2D(strokes[i])); c.restore(); }
+      if (animActive) redrawFull();
       return;
     }
     const start = performance.now();
@@ -969,13 +1036,77 @@ footer a:hover { color: var(--text); }
     })(performance.now());
   }
 
+  // ── Load a doodle from the queue ───────────────────────────────────────
+  function loadDoodle(idx) {
+    const doodle = queue[idx];
+    strokes      = doodle.s || doodle.strokes || [];
+    const rawWord = doodle.w ? deobfuscate(doodle.w) : (doodle.word || '');
+    answer       = rawWord.toLowerCase().trim();
+    bounds       = getBounds(strokes);
+    sampled      = strokes.map(samplePath);
+    strokeDurMs  = strokes.length > 0 ? DRAW_MS / strokes.length : DRAW_MS;
+    gameOver     = false;
+    won          = false;
+    animActive   = false;
+    done.clear();
+
+    // Reset UI
+    input.value = '';
+    input.className = 'pm-input';
+    input.readOnly = false;
+    goBtn.disabled = false;
+    document.getElementById('pmStatus').textContent = '';
+    document.getElementById('playResult').classList.remove('show');
+
+    // Counter label e.g. "2 / 3"
+    const n = queue.length;
+    document.getElementById('pmStatus').textContent = n > 1 ? `${idx + 1} / ${n}` : '';
+
+    // Clear canvas
+    const c = setupCtx(); c.restore();
+  }
+
   // ── Start challenge (Play button tapped) ───────────────────────────────
   window.startChallenge = function() {
     document.getElementById('pmPlayScreen').style.display = 'none';
     buildKeyboard();
+    loadDoodle(0);
     animActive = true;
     revealNext(0);
   };
+
+  // ── Next doodle or summary ─────────────────────────────────────────────
+  window.playNext = function() {
+    queueIdx++;
+    if (queueIdx < queue.length) {
+      loadDoodle(queueIdx);
+      animActive = true;
+      revealNext(0);
+    } else {
+      showSummary();
+    }
+  };
+
+  // ── Summary ────────────────────────────────────────────────────────────
+  function showSummary() {
+    const n        = results.length;
+    const wonCount = results.filter(r => r.won).length;
+    const summaryEl = document.getElementById('playSummary');
+    const titleEl   = document.getElementById('psSummaryTitle');
+    const listEl    = document.getElementById('psSummaryList');
+
+    titleEl.textContent = wonCount === n ? 'CLEAN SWEEP!' : wonCount > 0 ? 'WELL PLAYED!' : 'BETTER LUCK!';
+    titleEl.className   = 'ps-summary-title ' + (wonCount > 0 ? 'won' : 'lost');
+
+    listEl.innerHTML = results.map(r => `
+      <div class="ps-result-row">
+        <span class="ps-result-dot ${r.won ? 'won' : 'lost'}">${r.won ? '✓' : '✗'}</span>
+        <span class="ps-result-word">${r.word.toUpperCase()}</span>
+      </div>`).join('');
+
+    document.getElementById('playResult').classList.remove('show');
+    summaryEl.classList.add('show');
+  }
 
   // ── Keyboard ───────────────────────────────────────────────────────────
   const input  = document.getElementById('playInput');
@@ -1016,7 +1147,7 @@ footer a:hover { color: var(--text); }
     });
     kb.appendChild(bottomRow);
   }
-  // Physical keyboard support
+
   document.addEventListener('keydown', e => {
     if (gameOver) return;
     if (e.key==='Enter') { playSubmitGuess(); return; }
@@ -1042,22 +1173,35 @@ footer a:hover { color: var(--text); }
     if (gameOver) return;
     gameOver = true; won = didWin;
     animActive = false;
-    // draw all strokes
-    const c=setupCtx(); for(let i=0;i<strokes.length;i++) c.stroke(new Path2D(strokes[i])); c.restore();
+    redrawFull();
     goBtn.disabled = true;
+    results.push({ won: didWin, word: answer });
 
-    const resultEl = document.getElementById('playResult');
-    document.getElementById('prOutcome').textContent = didWin ? 'You got it!' : 'Time\'s up!';
-    document.getElementById('prOutcome').className = 'pr-outcome ' + (didWin?'won':'lost');
-    document.getElementById('prWord').innerHTML = didWin
-      ? 'The word was <strong>'+answer.toUpperCase()+'</strong>'
-      : 'The answer was <strong>'+answer.toUpperCase()+'</strong>';
-    resultEl.classList.add('show');
+    const isLast = queueIdx >= queue.length - 1;
+    document.getElementById('prOutcome').textContent = didWin ? 'You got it!' : "Time's up!";
+    document.getElementById('prOutcome').className   = 'pr-outcome ' + (didWin ? 'won' : 'lost');
+    document.getElementById('prWord').innerHTML      = didWin
+      ? 'The word was <strong>' + answer.toUpperCase() + '</strong>'
+      : 'The answer was <strong>' + answer.toUpperCase() + '</strong>';
+
+    const nextBtn = document.getElementById('prNextBtn');
+    nextBtn.textContent = isLast
+      ? (queue.length > 1 ? 'SEE RESULTS →' : 'DONE')
+      : `NEXT DOODLE (${queueIdx + 2}/${queue.length}) →`;
+    nextBtn.style.display = '';
+
+    document.getElementById('playShareBtn').style.display = isLast ? '' : 'none';
+    document.getElementById('playResult').classList.add('show');
   }
 
   // ── Share ──────────────────────────────────────────────────────────────
   window.playShare = function() {
-    const shareText = (won ? 'I completed the doodle challenge!' : "I couldn't guess this doodle!") + '\n' + sharedUrl;
+    const wonCount = results.filter(r=>r.won).length;
+    const n = results.length;
+    const shareText = (n > 1
+      ? `I got ${wonCount}/${n} doodles right!`
+      : (won ? 'I completed the doodle challenge!' : "I couldn't guess this doodle!"))
+      + '\n' + sharedUrl;
     const shareBtn = document.getElementById('playShareBtn');
     if (navigator.share) {
       navigator.share({ title: 'What the Doodle?', text: shareText }).catch(()=>{});
