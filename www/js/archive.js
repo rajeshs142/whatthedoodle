@@ -6,12 +6,46 @@ function showArchivePage(returnPage) {
   document.querySelectorAll('.cal-filter').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.filter === 'all');
   });
+  _buildArchiveStats();
   buildCalendarGrid();
   showPage('archive');
   requestAnimationFrame(() => {
     const todayRow = document.querySelector('#calendarBody .cal-row.today');
     if (todayRow) todayRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
   });
+}
+
+function _buildArchiveStats() {
+  const el = document.getElementById('archiveStats');
+  if (!el) return;
+  const p = loadProgress();
+  const today = daysSinceStart();
+  let daysPlayed = 0, totalWon = 0, totalScore = 0, streak = 0;
+  let streakActive = true;
+  for (let d = today; d >= 0; d--) {
+    const slots = p[d] || [];
+    const played = slots.filter(s => s != null).length;
+    if (played > 0) {
+      daysPlayed++;
+      const dayWon = slots.filter(s => s > 0);
+      totalWon   += dayWon.length;
+      totalScore += dayWon.reduce((a, b) => a + b, 0);
+      if (streakActive && played >= CONFIG.gamesPerDay) streak++;
+      else streakActive = false;
+    } else if (d < today) { streakActive = false; }
+  }
+  const winRate = daysPlayed ? Math.round(totalWon / daysPlayed * 100) : 0;
+  const stat = (val, label) =>
+    `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:1px;color:var(--text)">${val}</div>
+      <div style="font-size:0.55rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--sub)">${label}</div>
+    </div>`;
+  el.innerHTML = `<div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;margin-bottom:4px">
+    ${stat(daysPlayed, 'Played')}
+    ${stat(winRate + '%', 'Win Rate')}
+    ${stat(streak, 'Streak')}
+    ${stat(totalScore, 'Total Pts')}
+  </div>`;
 }
 
 let calFilter = 'all';

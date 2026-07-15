@@ -1,5 +1,5 @@
 // ── MODAL MANAGEMENT ─────────────────────────────────────────────────────
-const PAGES = ['home', 'levels', 'game', 'result', 'summary', 'doodles', 'create', 'doodle-result', 'settings', 'stats', 'archive', 'categories', 'cat-levels'];
+const PAGES = ['home', 'levels', 'game', 'result', 'summary', 'doodles', 'create', 'doodle-result', 'settings', 'archive', 'categories', 'cat-levels'];
 // Pages that replace history (no back entry) vs push (back navigable)
 const _REPLACE_PAGES = new Set(['game', 'result']);
 
@@ -81,9 +81,28 @@ function showHome() {
   showPage('home');
   renderHomeBg();
   _updateDailyBadge();
+  _updatePlayLevelSub();
 
   const btns = document.getElementById('homeBtns');
   if (btns) btns.classList.add('visible');
+}
+
+function _updatePlayLevelSub() {
+  const sub = document.getElementById('playLevelSub');
+  if (!sub) return;
+  const { nodes } = buildMapSequence();
+  const s = loadStars();
+  let nextIdx = 0;
+  for (let i = 0; i < nodes.length; i++) {
+    if (!(s[nodes[i].drawing.id] > 0)) { nextIdx = i; break; }
+    nextIdx = i;
+  }
+  if (nextIdx > 0) {
+    sub.textContent = 'Level ' + (nextIdx + 1);
+    sub.style.display = 'block';
+  } else {
+    sub.style.display = 'none';
+  }
 }
 
 function _updateDailyBadge() {
@@ -852,52 +871,6 @@ function startDailyMode() {
   }
 }
 
-// ── STATS PAGE ────────────────────────────────────────────────────────────
-let _statsReturnPage = 'settings';
 function showStatsPage(returnPage) {
-  _statsReturnPage = returnPage || 'settings';
-  const p = loadProgress();
-  const today = daysSinceStart();
-  let daysPlayed = 0, totalGames = 0, totalWon = 0, totalScore = 0, streak = 0;
-  let streakActive = true;
-  for (let d = today; d >= 0; d--) {
-    const slots = p[d] || [];
-    const played = slots.filter(s => s != null).length;
-    if (played > 0) {
-      daysPlayed++;
-      const dayWon = slots.filter(s => s > 0);
-      totalGames += played;
-      totalWon   += dayWon.length;
-      totalScore += dayWon.reduce((a, b) => a + b, 0);
-      if (streakActive && played >= CONFIG.gamesPerDay) streak++;
-      else streakActive = false;
-    } else if (d < today) {
-      streakActive = false;
-    }
-  }
-  const winRate  = totalGames ? Math.round(totalWon / totalGames * 100) : 0;
-  const avgScore = totalWon   ? Math.round(totalScore / totalWon)       : 0;
-
-  const stat = (val, label) =>
-    `<div class="stat"><div class="stat-val">${val}</div><div class="stat-label">${label}</div></div>`;
-
-  document.getElementById('statsBody').innerHTML = `
-    <div class="overlay-stats" style="padding:20px 0 4px;flex-wrap:wrap;gap:16px">
-      ${stat(daysPlayed, 'Days Played')}
-      ${stat(totalGames, 'Rounds')}
-      ${stat(winRate + '%', 'Win Rate')}
-      ${stat(streak, 'Streak')}
-      ${stat(totalWon, 'Correct')}
-      ${stat(avgScore, 'Avg Score')}
-    </div>
-    <div style="padding:16px 0 8px;border-top:1px solid var(--border);margin-top:8px;text-align:center">
-      <button class="hist-reset-btn" onclick="resetAllData()">RESET ALL DATA</button>
-    </div>`;
-
-  const alreadyOnStats = document.getElementById('page-stats').classList.contains('active');
-  if (alreadyOnStats) {
-    PAGES.forEach(p => document.getElementById('page-' + p).classList.toggle('active', p === 'stats'));
-  } else {
-    showPage('stats');
-  }
+  showArchivePage(returnPage || 'home');
 }
