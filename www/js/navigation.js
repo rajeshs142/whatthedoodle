@@ -808,6 +808,8 @@ function showLevelSummary(stars, won, score, isPreview = false) {
   document.getElementById('summaryWon').innerHTML = '<span class="star-on">' + '★'.repeat(stars) + '</span>'
     + '<span class="star-off">' + '☆'.repeat(3 - stars) + '</span>';
   document.getElementById('summaryWonLabel').textContent = 'Stars';
+  const streakElNav = document.getElementById('summaryStreakStat');
+  if (streakElNav) streakElNav.style.display = 'none';
 
   const framesEl = document.getElementById('summaryFrames');
   framesEl.className = 'summary-frames';

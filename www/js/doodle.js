@@ -188,7 +188,7 @@ let doodleStrokes    = [];
 let doodleCurrentPts = [];
 let doodleIsDrawing  = false;
 let doodleStrokeWidth = 2;
-const MAX_DOODLE_STROKES = 8;
+const MAX_DOODLE_STROKES = 20;
 const MAX_STROKE_PTS     = 50;
 const DOODLE_SLOTS_KEY   = 'qg_doodles';
 
@@ -687,6 +687,13 @@ function showDaySummary() {
     statsEl.style.display = '';
     document.getElementById('summaryWon').textContent     = `${wonCount}/${n}`;
     document.getElementById('summaryWonLabel').textContent = 'Correct';
+  }
+
+  const streakEl = document.getElementById('summaryStreakStat');
+  if (streakEl) {
+    const streak = _calcStreak();
+    streakEl.style.display = '';
+    document.getElementById('summaryStreak').textContent = streak;
   }
 
   const items = roundHistory.map((r, i) => {

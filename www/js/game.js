@@ -886,6 +886,8 @@ function showCatLevelSummary(stars, won, score) {
     '<span class="star-on">' + '★'.repeat(stars) + '</span>' +
     '<span class="star-off">' + '☆'.repeat(3 - stars) + '</span>';
   document.getElementById('summaryWonLabel').textContent = 'Stars';
+  const streakElGame = document.getElementById('summaryStreakStat');
+  if (streakElGame) streakElGame.style.display = 'none';
 
   const wordColor = won
     ? 'border-color:var(--correct);color:var(--correct);background:var(--correct-bg)'

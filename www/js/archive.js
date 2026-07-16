@@ -15,13 +15,25 @@ function showArchivePage(returnPage) {
   });
 }
 
+function _calcStreak() {
+  const p = loadProgress();
+  const today = daysSinceStart();
+  let streak = 0;
+  for (let d = today; d >= 0; d--) {
+    const slots = p[d] || [];
+    const played = slots.filter(s => s != null).length;
+    if (played >= CONFIG.gamesPerDay) streak++;
+    else if (d < today) break;
+  }
+  return streak;
+}
+
 function _buildArchiveStats() {
   const el = document.getElementById('archiveStats');
   if (!el) return;
   const p = loadProgress();
   const today = daysSinceStart();
-  let daysPlayed = 0, totalWon = 0, totalScore = 0, streak = 0;
-  let streakActive = true;
+  let daysPlayed = 0, totalWon = 0, totalScore = 0;
   for (let d = today; d >= 0; d--) {
     const slots = p[d] || [];
     const played = slots.filter(s => s != null).length;
@@ -30,10 +42,9 @@ function _buildArchiveStats() {
       const dayWon = slots.filter(s => s > 0);
       totalWon   += dayWon.length;
       totalScore += dayWon.reduce((a, b) => a + b, 0);
-      if (streakActive && played >= CONFIG.gamesPerDay) streak++;
-      else streakActive = false;
-    } else if (d < today) { streakActive = false; }
+    }
   }
+  const streak = _calcStreak();
   const winRate = daysPlayed ? Math.round(totalWon / daysPlayed * 100) : 0;
   const stat = (val, label) =>
     `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">

@@ -163,7 +163,7 @@
       <button class="sw-btn" onclick="doodleUndo()">UNDO</button>
       <button class="sw-btn" onclick="doodleClear()">CLEAR</button>
     </div>
-    <div class="doodle-stroke-info" id="doodleStrokeInfo">8 STROKES REMAINING</div>
+    <div class="doodle-stroke-info" id="doodleStrokeInfo">20 STROKES REMAINING</div>
     <div class="page-footer">
       <div style="display:flex;gap:8px;width:100%">
         <input type="text" id="doodle-word" placeholder="What did you draw?" maxlength="30"
@@ -237,8 +237,9 @@
 
   <!-- PAGE: SETTINGS -->
   <div id="page-settings" class="page" role="main" aria-label="Settings">
-    <div class="page-header">
+    <div class="page-header" style="position:relative;justify-content:center">
       <span class="page-header-title">SETTINGS</span>
+      <button class="hist-reset-btn" onclick="resetAllData()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%)">RESET</button>
     </div>
     <div class="page-content" style="gap:14px">
     <div class="preview-wrap">
@@ -370,9 +371,10 @@
     </div><!-- end page-content -->
     <div class="page-footer">
       <div style="display:flex;gap:8px;width:100%;max-width:340px;align-self:center">
-        <button class="overlay-btn primary" style="flex:1" onclick="applyCfg()">APPLY</button>
         <button class="overlay-btn secondary" style="flex:1" onclick="settingsDiscard()">CANCEL</button>
+        <button class="overlay-btn primary" style="flex:1" onclick="applyCfg()">APPLY</button>
       </div>
+      <span style="font-size:0.6rem;letter-spacing:2px;color:var(--sub);opacity:0.5;text-align:center;width:100%">v1.5</span>
     </div>
   </div>
 
@@ -391,6 +393,10 @@
         <div class="stat">
           <div class="stat-val result-stars" id="summaryWon">0/1</div>
           <div class="stat-label" id="summaryWonLabel">Correct</div>
+        </div>
+        <div class="stat" id="summaryStreakStat">
+          <div class="stat-val" id="summaryStreak">0</div>
+          <div class="stat-label">Streak</div>
         </div>
       </div>
       <div id="summaryFrames" class="summary-frames"></div>
@@ -467,10 +473,6 @@
     <div id="calendarBody" style="flex:1;overflow-y:auto;width:100%;display:flex;flex-direction:column;gap:8px;padding:0 16px"></div>
     <div class="page-footer">
       <button class="overlay-btn home" onclick="showHome()">HOME</button>
-      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:340px;padding:4px 0">
-        <button class="hist-reset-btn" onclick="resetAllData()">RESET ALL DATA</button>
-        <span style="font-size:0.6rem;letter-spacing:2px;color:var(--sub);opacity:0.5">v1.4</span>
-      </div>
     </div>
   </div>
 
